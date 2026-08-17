@@ -19,6 +19,7 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onIdentified: () => void | Promise<void>;
+  submitIdentity?: (identity: { username: string; phone: string }) => Promise<void>;
   title?: string;
 };
 
@@ -26,7 +27,13 @@ function firstIssue(result: { success: boolean; error?: { issues: { message: str
   return result.success ? null : (result.error?.issues[0]?.message ?? "Please check this field.");
 }
 
-export function IdentityDialog({ open, onOpenChange, onIdentified, title }: Props) {
+export function IdentityDialog({
+  open,
+  onOpenChange,
+  onIdentified,
+  submitIdentity,
+  title,
+}: Props) {
   const submit = useServerFn(createIdentity);
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
@@ -55,7 +62,12 @@ export function IdentityDialog({ open, onOpenChange, onIdentified, title }: Prop
     setPending(true);
     setFormError(null);
     try {
-      await submit({ data: { username: nameResult.data, phone: phoneResult.data } });
+      const identity = { username: nameResult.data, phone: phoneResult.data };
+      if (submitIdentity) {
+        await submitIdentity(identity);
+      } else {
+        await submit({ data: identity });
+      }
       await onIdentified();
       onOpenChange(false);
     } catch (err) {

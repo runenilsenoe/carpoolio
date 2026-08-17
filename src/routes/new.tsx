@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { EventFormFields, type EventFormState } from "@/components/EventFormFields";
 import { IdentityDialog } from "@/components/IdentityDialog";
-import { createEvent, getMe } from "@/lib/carpool.functions";
+import { createEvent, createEventWithIdentity, getMe } from "@/lib/carpool.functions";
 import { eventSchema } from "@/lib/schemas";
 import { errorMessage } from "@/lib/error-message";
 
@@ -33,6 +33,7 @@ function NewEvent() {
   const me = Route.useLoaderData();
   const navigate = useNavigate();
   const submit = useServerFn(createEvent);
+  const submitFirstEvent = useServerFn(createEventWithIdentity);
   const [form, setForm] = useState<EventFormState>({
     name: "",
     date: "",
@@ -113,7 +114,12 @@ function NewEvent() {
         open={askIdentity}
         onOpenChange={setAskIdentity}
         title="Almost there"
-        onIdentified={create}
+        submitIdentity={async (identity) => {
+          const parsed = eventSchema.parse(form);
+          const result = await submitFirstEvent({ data: { identity, event: parsed } });
+          await navigate({ to: "/s/$code", params: { code: result.share_code } });
+        }}
+        onIdentified={() => undefined}
       />
     </main>
   );

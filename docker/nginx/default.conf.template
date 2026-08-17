@@ -1,0 +1,76 @@
+# Public entrypoint. Cloudflare Tunnel should forward BOTH hostnames to this
+# container (http://localhost:8080 on the Mac by default):
+#   carpoolio.example.com      -> frontend (SSR app)
+#   api.carpoolio.example.com  -> self-hosted Supabase API (Kong)
+
+upstream carpoolio_app {
+    server app:3000;
+}
+
+upstream carpoolio_supabase {
+    server kong:8000;
+}
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# ---------------------------------------------------------------- frontend ---
+server {
+    listen 80;
+    server_name ${FRONTEND_HOST} localhost;
+
+    client_max_body_size 25m;
+    server_tokens off;
+
+    gzip on;
+    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # Immutable hashed build assets.
+    location /_build/ {
+        proxy_pass http://carpoolio_app;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location / {
+        proxy_pass http://carpoolio_app;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_read_timeout 60s;
+    }
+}
+
+# --------------------------------------------------------------- supabase ---
+server {
+    listen 80;
+    server_name ${API_HOST};
+
+    client_max_body_size 60m;
+    server_tokens off;
+
+    # CORS is handled by Kong so preflights stay consistent across services.
+    location / {
+        proxy_pass http://carpoolio_supabase;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_read_timeout 3600s;   # long-lived realtime websockets
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+    }
+}

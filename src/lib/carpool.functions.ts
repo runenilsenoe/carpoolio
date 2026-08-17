@@ -41,6 +41,39 @@ export const createEvent = createServerFn({ method: "POST" })
     throw new Error("Could not create the carpool. Please try again.");
   });
 
+export const createEventWithIdentity = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => {
+    const raw = data as { identity?: unknown; event?: unknown };
+    return {
+      identity: identitySchema.parse(raw.identity),
+      event: eventSchema.parse(raw.event),
+    };
+  })
+  .handler(async ({ data }) => {
+    const { createIdentitySession, generateShareCode } = await import("./session.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const user = await createIdentitySession(data.identity.username, data.identity.phone);
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const share_code = generateShareCode();
+      const { data: event, error } = await supabaseAdmin
+        .from("events")
+        .insert({
+          name: data.event.name,
+          date: data.event.date,
+          time: data.event.time ? data.event.time : null,
+          destination: data.event.destination ? data.event.destination : null,
+          share_code,
+          created_by_user_id: user.id,
+        })
+        .select("share_code")
+        .single();
+      if (!error && event) return { share_code: event.share_code };
+      if (error && error.code !== "23505") throw new Error("Could not create the carpool.");
+    }
+    throw new Error("Could not create the carpool. Please try again.");
+  });
+
 export const getEventPage = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => ({ code: String((data as { code: string }).code) }))
   .handler(async ({ data }): Promise<EventPage | null> => {
