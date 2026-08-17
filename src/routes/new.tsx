@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { EventFormFields, type EventFormState } from "@/components/EventFormFields";
+import {
+  EventFormFields,
+  type EventFormState,
+} from "@/components/EventFormFields";
 import { IdentityDialog } from "@/components/IdentityDialog";
-import { createEvent, createEventWithIdentity, getMe } from "@/lib/carpool.functions";
+import { createEvent, createEventWithIdentity, getMe } from "@/lib/api";
 import { eventSchema } from "@/lib/schemas";
 import { errorMessage } from "@/lib/error-message";
 
@@ -16,7 +18,8 @@ export const Route = createFileRoute("/new")({
       { title: "Create a carpool — Carpoolio" },
       {
         name: "description",
-        content: "Name your event, pick a date, and get a link to share with everyone coming.",
+        content:
+          "Name your event, pick a date, and get a link to share with everyone coming.",
       },
       { property: "og:title", content: "Create a carpool — Carpoolio" },
       {
@@ -32,8 +35,6 @@ export const Route = createFileRoute("/new")({
 function NewEvent() {
   const me = Route.useLoaderData();
   const navigate = useNavigate();
-  const submit = useServerFn(createEvent);
-  const submitFirstEvent = useServerFn(createEventWithIdentity);
   const [form, setForm] = useState<EventFormState>({
     name: "",
     date: "",
@@ -53,7 +54,7 @@ function NewEvent() {
     setPending(true);
     setError(null);
     try {
-      const result = await submit({ data: parsed.data });
+      const result = await createEvent(parsed.data);
       await navigate({ to: "/s/$code", params: { code: result.share_code } });
     } catch (err) {
       const message = errorMessage(err);
@@ -116,8 +117,11 @@ function NewEvent() {
         title="Almost there"
         submitIdentity={async (identity) => {
           const parsed = eventSchema.parse(form);
-          const result = await submitFirstEvent({ data: { identity, event: parsed } });
-          await navigate({ to: "/s/$code", params: { code: result.share_code } });
+          const result = await createEventWithIdentity(identity, parsed);
+          await navigate({
+            to: "/s/$code",
+            params: { code: result.share_code },
+          });
         }}
         onIdentified={() => undefined}
       />

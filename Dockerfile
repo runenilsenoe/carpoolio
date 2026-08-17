@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------
 # Carpoolio frontend.
 # This is a TanStack Start app: it renders on the server and runs its server
-# functions (which need the Supabase service-role key) in a Node process.
+# functions in a Node process. Business data is served by the ASP.NET API.
 # So we build with Nitro's node-server preset and let nginx proxy to it.
 # ---------------------------------------------------------------------------
 
