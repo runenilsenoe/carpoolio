@@ -1,20 +1,20 @@
 # Self-hosting Carpoolio on your Mac
 
 Everything — app, database, auth, storage, realtime — runs in Docker on your
-machine. No Lovable Cloud, no hosted Supabase at runtime.
+machine. It does not depend on a hosted application platform at runtime.
 
 ## What runs
 
-| Service    | Image                    | Role                                          |
-| ---------- | ------------------------ | --------------------------------------------- |
-| `db`       | supabase/postgres        | PostgreSQL, initialized from `supabase/migrations` |
-| `auth`     | supabase/gotrue          | Supabase Auth                                 |
-| `rest`     | postgrest                | Data API                                      |
-| `realtime` | supabase/realtime        | Realtime                                      |
-| `storage`  | supabase/storage-api + imgproxy | Storage                                |
-| `kong`     | kong                     | Single Supabase API gateway (`/auth/v1`, `/rest/v1`, `/storage/v1`, `/realtime/v1`) + CORS |
-| `app`      | built from `Dockerfile`  | Carpoolio (TanStack Start SSR + server functions) |
-| `nginx`    | nginx                    | Public entrypoint for both hostnames          |
+| Service    | Image                           | Role                                                                                       |
+| ---------- | ------------------------------- | ------------------------------------------------------------------------------------------ |
+| `db`       | supabase/postgres               | PostgreSQL, initialized from `supabase/migrations`                                         |
+| `auth`     | supabase/gotrue                 | Supabase Auth                                                                              |
+| `rest`     | postgrest                       | Data API                                                                                   |
+| `realtime` | supabase/realtime               | Realtime                                                                                   |
+| `storage`  | supabase/storage-api + imgproxy | Storage                                                                                    |
+| `kong`     | kong                            | Single Supabase API gateway (`/auth/v1`, `/rest/v1`, `/storage/v1`, `/realtime/v1`) + CORS |
+| `app`      | built from `Dockerfile`         | Carpoolio (TanStack Start SSR + server functions)                                          |
+| `nginx`    | nginx                           | Public entrypoint for both hostnames                                                       |
 
 **Edge Functions:** this project has none — all backend logic runs as TanStack
 server functions inside the `app` container, so no `functions` service is
@@ -47,7 +47,7 @@ Paste the output into `.env`. It produces:
   `JWT_SECRET`. **Server-side only, bypasses RLS.**
 - **`REALTIME_ENC_KEY`** (exactly 16 chars) and **`REALTIME_SECRET_KEY_BASE`**.
 
-`ANON_KEY` / `SERVICE_ROLE_KEY` must be signed with the *same* `JWT_SECRET` in
+`ANON_KEY` / `SERVICE_ROLE_KEY` must be signed with the _same_ `JWT_SECRET` in
 the same `.env`, or every API call returns 401. Changing `JWT_SECRET` later means
 regenerating both keys and rebuilding the frontend.
 

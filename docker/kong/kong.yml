@@ -45,7 +45,8 @@ services:
               range,
               prefer,
             ]
-          exposed_headers: [Content-Range, Content-Length, X-Kong-Upstream-Latency]
+          exposed_headers:
+            [Content-Range, Content-Length, X-Kong-Upstream-Latency]
           credentials: true
           max_age: 3600
 
@@ -97,7 +98,8 @@ services:
         config:
           origins: [\$CORS_ALLOWED_ORIGINS]
           methods: [GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD]
-          headers: [Accept, Authorization, Content-Type, apikey, x-client-info, range]
+          headers:
+            [Accept, Authorization, Content-Type, apikey, x-client-info, range]
           exposed_headers: [Content-Range, Content-Length]
           credentials: true
           max_age: 3600

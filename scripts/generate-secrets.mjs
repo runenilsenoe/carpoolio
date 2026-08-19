@@ -9,12 +9,18 @@
 import { createHmac, randomBytes } from "node:crypto";
 
 const b64url = (buf) =>
-  Buffer.from(buf).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  Buffer.from(buf)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 
 function signJwt(payload, secret) {
   const header = b64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const body = b64url(JSON.stringify(payload));
-  const sig = b64url(createHmac("sha256", secret).update(`${header}.${body}`).digest());
+  const sig = b64url(
+    createHmac("sha256", secret).update(`${header}.${body}`).digest(),
+  );
   return `${header}.${body}.${sig}`;
 }
 

@@ -14,7 +14,8 @@ type Props = {
 };
 
 export function EventFormFields({ value, onChange }: Props) {
-  const set = (patch: Partial<EventFormState>) => onChange({ ...value, ...patch });
+  const set = (patch: Partial<EventFormState>) =>
+    onChange({ ...value, ...patch });
 
   return (
     <div className="space-y-4">

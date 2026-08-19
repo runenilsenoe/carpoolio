@@ -1,10 +1,14 @@
-import { getCookie, setCookie, deleteCookie, getRequest } from "@tanstack/react-start/server";
+import {
+  getCookie,
+  setCookie,
+  deleteCookie,
+  getRequest,
+} from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { normalizePhoneOrNull } from "./phone";
 
-
 const COOKIE_NAME = "carpoolio_sid";
-const ONE_YEAR = 60 * 60 * 24 * 365;
+const SESSION_MAX_AGE = 60 * 60 * 24 * 400;
 
 export type CurrentUser = {
   id: string;
@@ -27,6 +31,23 @@ function randomToken(): string {
     .join("");
 }
 
+function setSessionCookie(token: string) {
+  let secure = true;
+  try {
+    secure = new URL(getRequest().url).protocol === "https:";
+  } catch {
+    // Keep secure cookies as the safe default when no request URL is available.
+  }
+
+  setCookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+    maxAge: SESSION_MAX_AGE,
+  });
+}
+
 /** Normalizes a phone number to E.164 form. Defaults to Norway (+47). */
 export function normalizePhone(input: string): string {
   const normalized = normalizePhoneOrNull(input);
@@ -35,7 +56,6 @@ export function normalizePhone(input: string): string {
   }
   return normalized;
 }
-
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const token = getCookie(COOKIE_NAME);
@@ -46,7 +66,17 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
     .select("user_id, users!inner(id, username)")
     .eq("token_hash", tokenHash)
     .maybeSingle();
-  if (!data) return null;
+  if (!data) {
+    deleteCookie(COOKIE_NAME, { path: "/" });
+    return null;
+  }
+
+  await supabaseAdmin
+    .from("sessions")
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq("token_hash", tokenHash);
+  setSessionCookie(token);
+
   const user = data.users as unknown as { id: string; username: string };
   return { id: user.id, username: user.username };
 }
@@ -72,7 +102,8 @@ export async function createIdentitySession(
     .insert({ username: name, phone_number: phone })
     .select("id, username")
     .single();
-  if (error || !user) throw new Error("Could not create your profile. Please try again.");
+  if (error || !user)
+    throw new Error("Could not create your profile. Please try again.");
 
   const token = randomToken();
   const tokenHash = await sha256Hex(token);
@@ -81,23 +112,7 @@ export async function createIdentitySession(
     .insert({ token_hash: tokenHash, user_id: user.id });
   if (sErr) throw new Error("Could not start your session. Please try again.");
 
-  // `secure` cookies are dropped by the browser over plain http (local preview),
-  // which would silently lose the session right after sign-up.
-  const isSecure = (() => {
-    try {
-      return new URL(getRequest().url).protocol === "https:";
-    } catch {
-      return true;
-    }
-  })();
-
-  setCookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: isSecure,
-    path: "/",
-    maxAge: ONE_YEAR,
-  });
+  setSessionCookie(token);
 
   return { id: user.id, username: user.username };
 }

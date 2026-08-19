@@ -2,6 +2,7 @@ export type Passenger = {
   id: string;
   userId: string;
   username: string;
+  note: string | null;
 };
 
 export type CarView = {

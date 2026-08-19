@@ -18,6 +18,7 @@ type Props = {
   destination: string | null;
   busy: boolean;
   onJoin: (car: CarView) => void;
+  onAddPassenger: (car: CarView) => void;
   onLeave: (car: CarView) => void;
   onEdit: (car: CarView) => void;
   onDelete: (car: CarView) => void;
@@ -31,6 +32,7 @@ export function CarCard({
   destination,
   busy,
   onJoin,
+  onAddPassenger,
   onLeave,
   onEdit,
   onDelete,
@@ -38,7 +40,10 @@ export function CarCard({
 }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
-  const [removeTarget, setRemoveTarget] = useState<{ id: string; name: string } | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   const isDriver = !!meId && meId === car.driverUserId;
   const isPassenger = !!meId && car.passengers.some((p) => p.userId === meId);
@@ -79,8 +84,16 @@ export function CarCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-2xl">
+              <DropdownMenuItem
+                disabled={full}
+                onSelect={() => onAddPassenger(car)}
+              >
+                Add passenger
+              </DropdownMenuItem>
               {isDriver ? (
-                <DropdownMenuItem onSelect={() => onEdit(car)}>Edit car</DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onEdit(car)}>
+                  Edit car
+                </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem
                 onSelect={() => setConfirmDelete(true)}
@@ -114,11 +127,18 @@ export function CarCard({
               className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-sm text-secondary-foreground"
             >
               {p.username}
-              {p.userId === meId ? <span className="text-muted-foreground">(you)</span> : null}
+              {p.userId === meId ? (
+                <span className="text-muted-foreground">(you)</span>
+              ) : null}
+              {p.note ? (
+                <span className="text-muted-foreground">· {p.note}</span>
+              ) : null}
               {canManage ? (
                 <button
                   type="button"
-                  onClick={() => setRemoveTarget({ id: p.id, name: p.username })}
+                  onClick={() =>
+                    setRemoveTarget({ id: p.id, name: p.username })
+                  }
                   className="ml-0.5 rounded-full px-1 text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                   aria-label={`Remove ${p.username}`}
                 >
@@ -132,7 +152,9 @@ export function CarCard({
 
       <div className="mt-5">
         {isDriver ? (
-          <p className="text-sm font-medium text-primary">You're driving this car</p>
+          <p className="text-sm font-medium text-primary">
+            You're driving this car
+          </p>
         ) : isPassenger ? (
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-primary">
@@ -161,7 +183,9 @@ export function CarCard({
       <ConfirmDialog
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
-        title={isDriver ? "Delete your car?" : `Remove ${car.driverName}'s car?`}
+        title={
+          isDriver ? "Delete your car?" : `Remove ${car.driverName}'s car?`
+        }
         description="Everyone riding along will lose their seat. This can't be undone."
         confirmLabel="Delete car"
         onConfirm={() => onDelete(car)}
@@ -181,7 +205,8 @@ export function CarCard({
         description="They'll lose their seat in this car."
         confirmLabel="Remove"
         onConfirm={() => {
-          if (removeTarget) onRemovePassenger(removeTarget.id, removeTarget.name);
+          if (removeTarget)
+            onRemovePassenger(removeTarget.id, removeTarget.name);
         }}
       />
     </article>
