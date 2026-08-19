@@ -1,6 +1,5 @@
 import { format, parseISO } from "date-fns";
 
-/** "Friday, 21 August" (adds year when it isn't the current one). */
 export function formatEventDate(date: string): string {
   try {
     const d = parseISO(date);
@@ -11,7 +10,6 @@ export function formatEventDate(date: string): string {
   }
 }
 
-/** "18:00" from "18:00:00" */
 export function formatTime(time: string | null | undefined): string | null {
   if (!time) return null;
   return time.slice(0, 5);

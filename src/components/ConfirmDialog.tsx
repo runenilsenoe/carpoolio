@@ -30,11 +30,15 @@ export function ConfirmDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="rounded-3xl">
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-display text-2xl">{title}</AlertDialogTitle>
+          <AlertDialogTitle className="font-display text-2xl">
+            {title}
+          </AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2">
-          <AlertDialogCancel className="h-11 rounded-xl">Cancel</AlertDialogCancel>
+          <AlertDialogCancel className="h-11 rounded-xl">
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             className="h-11 rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -45,5 +49,4 @@ export function ConfirmDialog({
       </AlertDialogContent>
     </AlertDialog>
   );
-
 }

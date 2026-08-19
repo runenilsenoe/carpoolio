@@ -48,8 +48,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --shadow-soft: 0 1px 2px oklch(0.3 0.03 70 / 0.04), 0 8px 24px oklch(0.3 0.03 70 / 0.06);
-  --shadow-lift: 0 2px 6px oklch(0.3 0.03 70 / 0.06), 0 16px 40px oklch(0.3 0.03 70 / 0.1);
+  --shadow-soft:
+    0 1px 2px oklch(0.3 0.03 70 / 0.04), 0 8px 24px oklch(0.3 0.03 70 / 0.06);
+  --shadow-lift:
+    0 2px 6px oklch(0.3 0.03 70 / 0.06), 0 16px 40px oklch(0.3 0.03 70 / 0.1);
 }
 
 :root {
@@ -102,4 +104,3 @@
   font-weight: 400;
   letter-spacing: -0.015em;
 }
-

@@ -1,7 +1,12 @@
 import { useState } from "react";
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  notFound,
+  useRouter,
+} from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { CalendarDays, MapPin, Plus, Settings2, Share2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,9 +19,14 @@ import {
 import { CarCard } from "@/components/CarCard";
 import { CarFormDialog } from "@/components/CarFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { EventFormFields, type EventFormState } from "@/components/EventFormFields";
+import { EventHeader } from "@/components/EventHeader";
+import {
+  EventFormFields,
+  type EventFormState,
+} from "@/components/EventFormFields";
 import { IdentityDialog } from "@/components/IdentityDialog";
 import {
+  addPassenger,
   addCar,
   deleteCar,
   deleteEvent,
@@ -42,7 +52,10 @@ export const Route = createFileRoute("/e/$code")({
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {
-        meta: [{ title: "Carpool not found — Carpoolio" }, { name: "robots", content: "noindex" }],
+        meta: [
+          { title: "Carpool not found — Carpoolio" },
+          { name: "robots", content: "noindex" },
+        ],
       };
     }
     const { event } = loaderData;
@@ -84,6 +97,7 @@ function EventPage() {
   const { event, cars, me, isCreator } = data;
 
   const runAddCar = useServerFn(addCar);
+  const runAddPassenger = useServerFn(addPassenger);
   const runUpdateCar = useServerFn(updateCar);
   const runJoinCar = useServerFn(joinCar);
   const runLeaveCar = useServerFn(leaveCar);
@@ -98,6 +112,7 @@ function EventPage() {
   const [carFormOpen, setCarFormOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<CarView | null>(null);
   const [joinTarget, setJoinTarget] = useState<CarView | null>(null);
+  const [passengerTarget, setPassengerTarget] = useState<CarView | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [deleteEventOpen, setDeleteEventOpen] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>({
@@ -109,13 +124,10 @@ function EventPage() {
   const [eventError, setEventError] = useState<string | null>(null);
 
   const myCar = me ? cars.find((c) => c.driverUserId === me.id) : undefined;
-  const eventTime = formatTime(event.time);
-
   async function refresh() {
     await router.invalidate();
   }
 
-  /** Runs an action, asking for identity first when the visitor has none. */
   function withIdentity(action: () => Promise<void>) {
     if (!me) {
       setAfterIdentity(() => action);
@@ -175,12 +187,17 @@ function EventPage() {
   async function saveEvent() {
     const parsed = eventSchema.safeParse(eventForm);
     if (!parsed.success) {
-      setEventError(parsed.error.issues[0]?.message ?? "Please check the details.");
+      setEventError(
+        parsed.error.issues[0]?.message ?? "Please check the details.",
+      );
       return;
     }
     setEventError(null);
     await guarded(
-      () => runUpdateEvent({ data: { code: event.share_code, ...parsed.data } }).then(() => undefined),
+      () =>
+        runUpdateEvent({
+          data: { code: event.share_code, ...parsed.data },
+        }).then(() => undefined),
       "Carpool updated",
     );
     setManageOpen(false);
@@ -206,56 +223,22 @@ function EventPage() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 pt-8 pb-28">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link to="/" className="text-sm font-semibold tracking-tight text-primary">
-            Carpoolio
-          </Link>
-          <h1 className="mt-3 font-display text-4xl leading-tight text-balance">{event.name}</h1>
-          <p className="mt-3 flex items-center gap-2 text-muted-foreground">
-            <CalendarDays className="size-4 shrink-0" aria-hidden />
-            <span>
-              {formatEventDate(event.date)}
-              {eventTime ? ` · ${eventTime}` : ""}
-            </span>
-          </p>
-          {event.destination ? (
-            <p className="mt-1.5 flex items-center gap-2 text-muted-foreground">
-              <MapPin className="size-4 shrink-0" aria-hidden />
-              {event.destination}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={shareEvent}
-            className="size-10 rounded-full"
-            aria-label="Share this carpool"
-          >
-            <Share2 className="size-5" />
-          </Button>
-          {isCreator ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setManageOpen(true)}
-              className="size-10 rounded-full"
-              aria-label="Manage this carpool"
-            >
-              <Settings2 className="size-5" />
-            </Button>
-          ) : null}
-        </div>
-      </div>
+      <EventHeader
+        event={event}
+        isCreator={isCreator}
+        onManage={() => setManageOpen(true)}
+        onShare={shareEvent}
+      />
 
       <section aria-label="Cars" className="mt-8 space-y-4">
         {cars.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-12 text-center">
             <p className="font-display text-2xl">No cars yet</p>
             <p className="mt-2 text-muted-foreground">Be the first to drive!</p>
-            <Button onClick={handleAddCarClick} className="mt-6 h-12 rounded-2xl px-6 text-base">
+            <Button
+              onClick={handleAddCarClick}
+              className="mt-6 h-12 rounded-2xl px-6 text-base"
+            >
               <Plus className="size-5" aria-hidden />
               Add a car
             </Button>
@@ -270,9 +253,13 @@ function EventPage() {
               destination={event.destination}
               busy={busy}
               onJoin={handleJoin}
+              onAddPassenger={setPassengerTarget}
               onLeave={(c) =>
                 guarded(
-                  () => runLeaveCar({ data: { carId: c.id } }).then(() => undefined),
+                  () =>
+                    runLeaveCar({ data: { carId: c.id } }).then(
+                      () => undefined,
+                    ),
                   "You left the car",
                 )
               }
@@ -282,13 +269,19 @@ function EventPage() {
               }}
               onDelete={(c) =>
                 guarded(
-                  () => runDeleteCar({ data: { carId: c.id } }).then(() => undefined),
+                  () =>
+                    runDeleteCar({ data: { carId: c.id } }).then(
+                      () => undefined,
+                    ),
                   "Car removed",
                 )
               }
               onRemovePassenger={(memberId, name) =>
                 guarded(
-                  () => runRemovePassenger({ data: { memberId } }).then(() => undefined),
+                  () =>
+                    runRemovePassenger({ data: { memberId } }).then(
+                      () => undefined,
+                    ),
                   `${name} was removed`,
                 )
               }
@@ -297,7 +290,7 @@ function EventPage() {
         )}
       </section>
 
-      {cars.length > 0 && !myCar ? (
+      {cars.length > 0 && (isCreator || !myCar) ? (
         <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/90 px-5 py-4 backdrop-blur">
           <div className="mx-auto max-w-md">
             <Button
@@ -326,6 +319,27 @@ function EventPage() {
         }}
       />
 
+      <IdentityDialog
+        open={!!passengerTarget}
+        onOpenChange={(open) => {
+          if (!open) setPassengerTarget(null);
+        }}
+        title="Add passenger"
+        description={`Add someone to ${passengerTarget?.driverName ?? "this car"}'s passenger list. Their phone number remains private.`}
+        submitLabel="Add passenger"
+        showNote
+        submitIdentity={async (identity) => {
+          const car = passengerTarget;
+          if (!car) return;
+          await runAddPassenger({
+            data: { carId: car.id, identity },
+          });
+          toast.success(`${identity.username} was added`);
+          await refresh();
+        }}
+        onIdentified={() => undefined}
+      />
+
       <CarFormDialog
         open={carFormOpen}
         onOpenChange={setCarFormOpen}
@@ -345,7 +359,10 @@ function EventPage() {
         onSubmit={submitCar}
       />
 
-      <Dialog open={!!joinTarget} onOpenChange={(o) => !o && setJoinTarget(null)}>
+      <Dialog
+        open={!!joinTarget}
+        onOpenChange={(o) => !o && setJoinTarget(null)}
+      >
         <DialogContent className="rounded-3xl sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
@@ -354,9 +371,10 @@ function EventPage() {
             <DialogDescription>
               {joinTarget?.pickupLocation}
               {event.destination ? ` → ${event.destination}` : ""}
-              {joinTarget?.departureTime ? ` · Leaving ${formatTime(joinTarget.departureTime)}` : ""}
-              <br />
-              1 seat will be reserved for you.
+              {joinTarget?.departureTime
+                ? ` · Leaving ${formatTime(joinTarget.departureTime)}`
+                : ""}
+              <br />1 seat will be reserved for you.
               {joinTarget
                 ? ` (${seatsLabel(joinTarget.passengers.length, joinTarget.availableSeats)})`
                 : ""}
@@ -375,8 +393,12 @@ function EventPage() {
       <Dialog open={manageOpen} onOpenChange={setManageOpen}>
         <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Manage carpool</DialogTitle>
-            <DialogDescription>Only you, as the organiser, can see this.</DialogDescription>
+            <DialogTitle className="font-display text-2xl">
+              Manage carpool
+            </DialogTitle>
+            <DialogDescription>
+              Only you, as the organiser, can see this.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-5">
             <EventFormFields value={eventForm} onChange={setEventForm} />

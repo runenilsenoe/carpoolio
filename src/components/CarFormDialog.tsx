@@ -45,8 +45,7 @@ export function CarFormDialog({
     setDeparture(initial?.departure_time ?? "");
     setNote(initial?.note ?? "");
     setError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [initial, open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,8 +78,9 @@ export function CarFormDialog({
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{title}</DialogTitle>
           <DialogDescription>
-            Driving as <span className="font-medium text-foreground">{driverName}</span>. Seats
-            below are for passengers — you're not counted.
+            Driving as{" "}
+            <span className="font-medium text-foreground">{driverName}</span>.
+            Seats below are for passengers — you're not counted.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -110,7 +110,8 @@ export function CarFormDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="car-departure">
-              Departure <span className="text-muted-foreground">(optional)</span>
+              Departure{" "}
+              <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Input
               id="car-departure"
@@ -139,7 +140,11 @@ export function CarFormDialog({
               {error}
             </p>
           ) : null}
-          <Button type="submit" disabled={pending} className="h-12 w-full rounded-xl text-base">
+          <Button
+            type="submit"
+            disabled={pending}
+            className="h-12 w-full rounded-xl text-base"
+          >
             {pending ? "Saving…" : submitLabel}
           </Button>
         </form>

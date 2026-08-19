@@ -6,7 +6,10 @@ export const nameSchema = z
   .trim()
   .min(2, "Please enter at least 2 characters")
   .max(40, "That name is a bit too long")
-  .regex(/^[\p{L}\p{M}][\p{L}\p{M}\s'’.-]*$/u, "Use letters only — no numbers or symbols");
+  .regex(
+    /^[\p{L}\p{M}][\p{L}\p{M}\s'’.-]*$/u,
+    "Use letters only — no numbers or symbols",
+  );
 
 export const phoneSchema = z
   .string()
@@ -24,11 +27,23 @@ export const identitySchema = z.object({
 });
 export type IdentityInput = z.infer<typeof identitySchema>;
 
+export const passengerSchema = identitySchema.extend({
+  note: z
+    .string()
+    .trim()
+    .max(200, "Keep the note under 200 characters")
+    .optional(),
+});
+export type PassengerInput = z.infer<typeof passengerSchema>;
 
 export const eventSchema = z.object({
   name: z.string().trim().min(2, "Please give the carpool a name").max(80),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Please pick a date"),
-  time: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")).optional(),
+  time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .or(z.literal(""))
+    .optional(),
   destination: z.string().trim().max(80).optional(),
 });
 export type EventInput = z.infer<typeof eventSchema>;
@@ -36,7 +51,11 @@ export type EventInput = z.infer<typeof eventSchema>;
 export const carSchema = z.object({
   available_seats: z.coerce.number().int().min(1, "At least 1 seat").max(20),
   pickup_location: z.string().trim().min(1, "Where do you start from?").max(80),
-  departure_time: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")).optional(),
+  departure_time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .or(z.literal(""))
+    .optional(),
   note: z.string().trim().max(200).optional(),
 });
 export type CarInput = z.infer<typeof carSchema>;

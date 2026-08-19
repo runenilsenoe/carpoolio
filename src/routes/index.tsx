@@ -11,10 +11,14 @@ export const Route = createFileRoute("/")({
         content:
           "Create a carpool, share the link, and let everyone find a seat. No signup, no passwords.",
       },
-      { property: "og:title", content: "Carpoolio — Going somewhere together?" },
+      {
+        property: "og:title",
+        content: "Carpoolio — Going somewhere together?",
+      },
       {
         property: "og:description",
-        content: "Create a carpool, share the link, and let everyone find a seat.",
+        content:
+          "Create a carpool, share the link, and let everyone find a seat.",
       },
     ],
   }),
@@ -24,7 +28,9 @@ export const Route = createFileRoute("/")({
 function Index() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-md flex-col px-6 pt-8 pb-10">
-      <p className="text-lg font-semibold tracking-tight text-primary">Carpoolio</p>
+      <p className="text-lg font-semibold tracking-tight text-primary">
+        Carpoolio
+      </p>
 
       <div className="flex flex-1 flex-col justify-center py-16">
         <h1 className="font-display text-5xl leading-[1.05] text-balance">
@@ -34,7 +40,10 @@ function Index() {
           Create a carpool, share the link, and let everyone find a seat.
         </p>
 
-        <Button asChild className="mt-10 h-14 w-full rounded-2xl text-base shadow-soft">
+        <Button
+          asChild
+          className="mt-10 h-14 w-full rounded-2xl text-base shadow-soft"
+        >
           <Link to="/new">
             Create a carpool
             <ArrowRight className="size-5" aria-hidden />

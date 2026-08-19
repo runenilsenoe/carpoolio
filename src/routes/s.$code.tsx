@@ -14,13 +14,21 @@ export const Route = createFileRoute("/s/$code")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Carpool not found — Carpoolio" }, { name: "robots", content: "noindex" }] };
+      return {
+        meta: [
+          { title: "Carpool not found — Carpoolio" },
+          { name: "robots", content: "noindex" },
+        ],
+      };
     }
     return {
       meta: [
         { title: `Share ${loaderData.event.name} — Carpoolio` },
         { name: "robots", content: "noindex" },
-        { name: "description", content: "Share this carpool link with everyone who's coming." },
+        {
+          name: "description",
+          content: "Share this carpool link with everyone who's coming.",
+        },
       ],
     };
   },
@@ -59,7 +67,11 @@ function SharePage() {
   async function share() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: event.name, text: `Carpool to ${event.name}`, url });
+        await navigator.share({
+          title: event.name,
+          text: `Carpool to ${event.name}`,
+          url,
+        });
       } catch {
         /* user cancelled */
       }
@@ -70,15 +82,23 @@ function SharePage() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md px-6 pt-10 pb-12">
-      <h1 className="font-display text-4xl text-balance">Your carpool is ready 🚗</h1>
-      <p className="mt-2 text-muted-foreground">Share this with everyone who's coming.</p>
+      <h1 className="font-display text-4xl text-balance">
+        Your carpool is ready 🚗
+      </h1>
+      <p className="mt-2 text-muted-foreground">
+        Share this with everyone who's coming.
+      </p>
 
       <p className="mt-6 text-lg font-semibold">{event.name}</p>
 
       <div className="mt-5 rounded-3xl border border-border bg-card p-5 shadow-soft">
         <div className="mx-auto aspect-square w-full max-w-[260px] overflow-hidden rounded-2xl bg-white">
           {qr ? (
-            <img src={qr} alt={`QR code linking to the ${event.name} carpool`} className="size-full" />
+            <img
+              src={qr}
+              alt={`QR code linking to the ${event.name} carpool`}
+              className="size-full"
+            />
           ) : (
             <div className="size-full animate-pulse bg-muted" />
           )}
@@ -90,16 +110,31 @@ function SharePage() {
 
       <div className="mt-6 space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" onClick={copy} className="h-13 rounded-2xl py-3.5 text-base">
-            {copied ? <Check className="size-5" aria-hidden /> : <Copy className="size-5" aria-hidden />}
+          <Button
+            variant="outline"
+            onClick={copy}
+            className="h-13 rounded-2xl py-3.5 text-base"
+          >
+            {copied ? (
+              <Check className="size-5" aria-hidden />
+            ) : (
+              <Copy className="size-5" aria-hidden />
+            )}
             {copied ? "Copied" : "Copy link"}
           </Button>
-          <Button variant="outline" onClick={share} className="h-13 rounded-2xl py-3.5 text-base">
+          <Button
+            variant="outline"
+            onClick={share}
+            className="h-13 rounded-2xl py-3.5 text-base"
+          >
             <Share2 className="size-5" aria-hidden />
             Share
           </Button>
         </div>
-        <Button asChild className="h-14 w-full rounded-2xl text-base shadow-soft">
+        <Button
+          asChild
+          className="h-14 w-full rounded-2xl text-base shadow-soft"
+        >
           <Link to="/e/$code" params={{ code: event.share_code }}>
             Open event
           </Link>
