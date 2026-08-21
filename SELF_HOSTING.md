@@ -25,7 +25,9 @@ chmod 600 .env
 ```
 
 Set strong values for `POSTGRES_PASSWORD`, `PHONE_ENCRYPTION_KEY`, and
-`PHONE_HASH_KEY`. Generate each phone key with:
+`PHONE_HASH_KEY`. Also replace `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD`;
+the password should be unique and can be generated with
+`openssl rand -base64 24`. Generate each phone key with:
 
 ```sh
 openssl rand -base64 32
@@ -36,6 +38,12 @@ use another location, set the repository Actions variable
 `CARPOOLIO_DEPLOY_ENV_FILE` to its absolute path.
 The runner account only needs Git, Docker, `docker-compose`, and `curl`; the
 .NET build runs inside Docker.
+
+The operational dashboard is available at `/dashboard`. The browser prompts
+for the dashboard credentials from `.env`. It shows total and daily users and
+carpools, plus the latest 100 API log entries. Logs are retained in the
+`api-logs` Docker volume and rotated at 5 MB. Error responses contain a
+`traceId` that can be matched against the dashboard logs.
 
 The database schema is created from `backend/db/init.sql` on an empty database
 volume. This deployment is intentionally configured as a fresh installation;

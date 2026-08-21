@@ -1,6 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
 using System.Threading.Tasks;
 using Carpoolio.Api.Contracts;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -11,6 +15,34 @@ namespace Carpoolio.Api.Tests;
 [Collection("api")]
 public class UserFlowTests(ApiFixture fixture)
 {
+    [Fact]
+    public async Task Dashboard_requires_basic_authentication()
+    {
+        var response = await fixture.Factory.CreateClient().GetAsync("/dashboard");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Contains(response.Headers.WwwAuthenticate, value => value.Scheme == "Basic");
+    }
+
+    [Fact]
+    public async Task Dashboard_shows_metrics_and_recent_logs_to_an_authenticated_operator()
+    {
+        var client = fixture.Factory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/dashboard");
+        request.Headers.Authorization = new AuthenticationHeaderValue(
+            "Basic",
+            Convert.ToBase64String(Encoding.UTF8.GetBytes("dashboard-user:dashboard-password")));
+
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Contains("Brukere totalt", html);
+        Assert.Contains("Samkjøringer totalt", html);
+        Assert.Contains("Siste 100 loggoppføringer", html);
+        Assert.Equal("no-store", response.Headers.CacheControl?.ToString());
+    }
+
     [Fact]
     public async Task Anonymous_me_is_returned_as_json_null()
     {

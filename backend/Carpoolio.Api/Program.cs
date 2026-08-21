@@ -2,9 +2,13 @@ using Carpoolio.Api.Contracts;
 using Carpoolio.Api.Domain;
 using Carpoolio.Api.Persistence;
 using Carpoolio.Api.Endpoints;
+using Carpoolio.Api.Observability;
 using Carpoolio.Api.Repositories;
+using Carpoolio.Api.Security;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,14 +20,28 @@ var dataSource = NpgsqlDataSource.Create(connectionString);
 builder.Services.AddSingleton(dataSource);
 builder.Services.AddDbContext<CarpoolDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<CarpoolRepository>();
+builder.Services.AddScoped<DashboardRepository>();
 builder.Services.AddSingleton<PhoneProtector>();
+builder.Services.AddSingleton<DashboardCredentials>();
+builder.Services.AddSingleton<RecentLogStore>();
+builder.Services.AddSingleton<ILoggerProvider, RecentLogLoggerProvider>();
 builder.Services.AddHealthChecks().AddCheck<PostgresHealthCheck>("postgres");
-builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("writes", limiter =>
+builder.Services.AddRateLimiter(options =>
 {
-    limiter.PermitLimit = 30;
-    limiter.Window = TimeSpan.FromMinutes(1);
-    limiter.QueueLimit = 0;
-}));
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("writes", limiter =>
+    {
+        limiter.PermitLimit = 30;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 0;
+    });
+    options.AddFixedWindowLimiter("dashboard", limiter =>
+    {
+        limiter.PermitLimit = 30;
+        limiter.Window = TimeSpan.FromMinutes(1);
+        limiter.QueueLimit = 0;
+    });
+});
 
 var app = builder.Build();
 app.UseForwardedHeaders();
@@ -47,9 +65,16 @@ app.Use(async (context, next) =>
 app.MapHealthChecks("/health");
 app.UseExceptionHandler(error => error.Run(async context =>
 {
+    var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+    var logger = context.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("Carpoolio.Api.UnhandledException");
+    if (exception is not null)
+        logger.LogError(exception, "Unhandled exception for {Method} {Path}. Trace ID: {TraceId}", context.Request.Method, context.Request.Path, context.TraceIdentifier);
+
     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-    await context.Response.WriteAsJsonAsync(new { message = "Something went wrong. Please try again." });
+    context.Response.Headers["X-Trace-Id"] = context.TraceIdentifier;
+    await context.Response.WriteAsJsonAsync(new { message = "Something went wrong. Please try again.", traceId = context.TraceIdentifier });
 }));
+app.MapDashboardEndpoints();
 
 var api = app.MapGroup("/api");
 api.MapIdentityEndpoints();

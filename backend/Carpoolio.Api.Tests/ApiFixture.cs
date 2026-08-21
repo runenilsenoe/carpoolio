@@ -35,6 +35,8 @@ public sealed class ApiFixture : IAsyncLifetime
                 ["DATABASE_URL"] = _database.GetConnectionString(),
                 ["PHONE_ENCRYPTION_KEY"] = Convert.ToBase64String(new byte[32]),
                 ["PHONE_HASH_KEY"] = Convert.ToBase64String(Enumerable.Repeat((byte)1, 32).ToArray()),
+                ["DASHBOARD_USERNAME"] = "dashboard-user",
+                ["DASHBOARD_PASSWORD"] = "dashboard-password",
             })));
     }
 
