@@ -1,124 +1,57 @@
-# Self-hosting Carpoolio on your Mac
+# Self-hosting Carpoolio
 
-Everything — app, database, auth, storage, realtime — runs in Docker on your
-machine. No Lovable Cloud, no hosted Supabase at runtime.
-
-## What runs
-
-| Service    | Image                    | Role                                          |
-| ---------- | ------------------------ | --------------------------------------------- |
-| `db`       | supabase/postgres        | PostgreSQL, initialized from `supabase/migrations` |
-| `auth`     | supabase/gotrue          | Supabase Auth                                 |
-| `rest`     | postgrest                | Data API                                      |
-| `realtime` | supabase/realtime        | Realtime                                      |
-| `storage`  | supabase/storage-api + imgproxy | Storage                                |
-| `kong`     | kong                     | Single Supabase API gateway (`/auth/v1`, `/rest/v1`, `/storage/v1`, `/realtime/v1`) + CORS |
-| `app`      | built from `Dockerfile`  | Carpoolio (TanStack Start SSR + server functions) |
-| `nginx`    | nginx                    | Public entrypoint for both hostnames          |
-
-**Edge Functions:** this project has none — all backend logic runs as TanStack
-server functions inside the `app` container, so no `functions` service is
-included. If you later add `supabase/functions/*`, add a `supabase/edge-runtime`
-service and route `/functions/v1` to it in `docker/kong/kong.yml`.
-
-**Why nginx doesn't just serve static files:** Carpoolio renders server-side and
-its server functions use the service-role key (sessions, event/car writes). The
-`app` container runs the built Node server; nginx reverse-proxies to it and
-serves as the single ingress for Cloudflare Tunnel.
-
-## 1. Secrets to generate
-
-Never commit these. Generate all of them at once:
+Carpoolio now runs as a small four-container stack: the React/TanStack web app,
+an ASP.NET Core API, PostgreSQL, and nginx.
 
 ```sh
 cp .env.example .env
-node scripts/generate-secrets.mjs
+# Set a strong POSTGRES_PASSWORD plus generated PHONE_ENCRYPTION_KEY and PHONE_HASH_KEY values.
+docker-compose up -d --build
 ```
 
-Paste the output into `.env`. It produces:
+Open <http://localhost:8080>. The API is intentionally exposed only through
+nginx at `/api`; the browser and API share the same origin, so identity cookies
+remain HttpOnly and no CORS configuration is required.
 
-- **`POSTGRES_PASSWORD`** — Postgres superuser + all Supabase service roles.
-  Manual alternative: `openssl rand -hex 24`.
-- **`JWT_SECRET`** — HS256 signing secret shared by Auth, PostgREST, Storage and
-  Realtime. Manual: `openssl rand -hex 32`.
-- **`ANON_KEY`** — JWT with `{"role":"anon"}` signed by `JWT_SECRET`. Public,
-  baked into the browser bundle.
-- **`SERVICE_ROLE_KEY`** — JWT with `{"role":"service_role"}` signed by
-  `JWT_SECRET`. **Server-side only, bypasses RLS.**
-- **`REALTIME_ENC_KEY`** (exactly 16 chars) and **`REALTIME_SECRET_KEY_BASE`**.
+## GitHub Actions on a self-hosted runner
 
-`ANON_KEY` / `SERVICE_ROLE_KEY` must be signed with the *same* `JWT_SECRET` in
-the same `.env`, or every API call returns 401. Changing `JWT_SECRET` later means
-regenerating both keys and rebuilding the frontend.
-
-## 2. Start
+Keep production secrets outside the checkout because `actions/checkout` cleans
+untracked files. Create `$HOME/.config/carpoolio/production.env` on the Mac,
+copy `.env.example` into it, then set strong values for `POSTGRES_PASSWORD`,
+`PHONE_ENCRYPTION_KEY`, and `PHONE_HASH_KEY`. Generate each phone key with:
 
 ```sh
-docker compose up -d
+openssl rand -base64 32
 ```
 
-First boot creates the roles/schemas and applies every file in
-`supabase/migrations` in order. App: <http://localhost:8080>.
-
-Reset everything (destroys all data, re-runs migrations):
+Restrict the file to the runner account:
 
 ```sh
-docker compose down -v && docker compose up -d --build
+chmod 700 "$HOME/.config/carpoolio"
+chmod 600 "$HOME/.config/carpoolio/production.env"
 ```
 
-New migration file added later? Apply it to the running DB:
+The deploy workflow uses that path by default. To use another location, set the
+repository Actions variable `CARPOOLIO_DEPLOY_ENV_FILE` to its absolute path.
+The runner account needs Docker access, `docker-compose`, and the .NET 10 SDK;
+the workflow fails before testing if its current Docker context is unavailable.
+
+The database schema is created from `backend/db/init.sql` on an empty database
+volume. This deployment is intentionally configured as a fresh installation;
+there is no legacy-data conversion step. Phone numbers are stored only as an
+HMAC-SHA-256 lookup hash and AES-GCM ciphertext from the first inserted row.
+
+If the server already has a discarded Carpoolio volume from an earlier test,
+remove it once before the first production deployment:
 
 ```sh
-docker compose exec -T db psql -U postgres -d postgres < supabase/migrations/<file>.sql
+docker-compose down -v
 ```
 
-## 3. Cloudflare Tunnel
+Do not use that command after production data has been created.
 
-Both hostnames point at the single nginx port; nginx routes by `Host`.
-
-```yaml
-# ~/.cloudflared/config.yml
-tunnel: <tunnel-id>
-credentials-file: /Users/<you>/.cloudflared/<tunnel-id>.json
-ingress:
-  - hostname: carpoolio.example.com
-    service: http://localhost:8080
-  - hostname: api.carpoolio.example.com
-    service: http://localhost:8080
-  - service: http_status:404
-```
-
-Then in `.env`:
-
-```
-FRONTEND_HOST=carpoolio.example.com
-API_HOST=api.carpoolio.example.com
-SUPABASE_PUBLIC_URL=https://api.carpoolio.example.com
-SITE_URL=https://carpoolio.example.com
-CORS_ALLOWED_ORIGINS=https://carpoolio.example.com
-ADDITIONAL_REDIRECT_URLS=https://carpoolio.example.com/**
-```
-
-Rebuild after changing `SUPABASE_PUBLIC_URL` — Vite inlines it at build time:
+Back up the database with:
 
 ```sh
-docker compose up -d --build app
+docker-compose exec -T db pg_dump -U carpoolio carpoolio > backup.sql
 ```
-
-## 4. How the URLs are wired
-
-- Browser → `VITE_SUPABASE_URL` = `SUPABASE_PUBLIC_URL` (build arg, public).
-- SSR/server functions → `SUPABASE_URL=http://kong:8000` (in-network, never
-  leaves the host).
-- Auth `API_EXTERNAL_URL` = `SUPABASE_PUBLIC_URL`; `SITE_URL` and
-  `ADDITIONAL_REDIRECT_URLS` control allowed post-login redirects.
-- CORS: Kong allows exactly `CORS_ALLOWED_ORIGINS`, with credentials, on all
-  four API prefixes.
-
-## 5. Backups
-
-```sh
-docker compose exec -T db pg_dump -U postgres postgres > backup.sql
-```
-
-Storage objects live in the `storage-data` volume; database in `db-data`.

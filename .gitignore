@@ -1,0 +1,8 @@
+.env
+node_modules/
+.output/
+.wrangler/
+backend/**/bin/
+backend/**/obj/
+.DS_Store
+*.sln.DotSettings.user
