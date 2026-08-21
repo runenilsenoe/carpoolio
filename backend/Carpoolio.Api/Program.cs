@@ -1,6 +1,7 @@
 using Carpoolio.Api.Contracts;
 using Carpoolio.Api.Domain;
 using Carpoolio.Api.Persistence;
+using Carpoolio.Api.Endpoints;
 using Carpoolio.Api.Repositories;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +17,7 @@ builder.Services.AddSingleton(dataSource);
 builder.Services.AddDbContext<CarpoolDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<CarpoolRepository>();
 builder.Services.AddSingleton<PhoneProtector>();
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks().AddCheck<PostgresHealthCheck>("postgres");
 builder.Services.AddRateLimiter(options => options.AddFixedWindowLimiter("writes", limiter =>
 {
     limiter.PermitLimit = 30;
@@ -51,20 +52,9 @@ app.UseExceptionHandler(error => error.Run(async context =>
 }));
 
 var api = app.MapGroup("/api");
-var identityApi = api.MapGroup("").WithTags("Identity");
+api.MapIdentityEndpoints();
 var eventsApi = api.MapGroup("/events").WithTags("Events");
 var carsApi = api.MapGroup("/cars").WithTags("Cars");
-
-identityApi.MapGet("/me", async (HttpContext context, NpgsqlDataSource db) =>
-    await CurrentUser(context, db) is { } user ? Results.Ok(user) : Results.Ok(null));
-
-identityApi.MapPost("/identity", async (IdentityInput input, HttpContext context, NpgsqlDataSource db, PhoneProtector phones) =>
-{
-    var validation = CarpoolRules.Validate(input);
-    if (validation is not null) return Bad(validation);
-    var user = await CreateIdentity(input, context, db, phones);
-    return Results.Ok(user);
-}).RequireRateLimiting("writes");
 
 eventsApi.MapPost("", async (EventInput input, HttpContext context, NpgsqlDataSource db) =>
 {

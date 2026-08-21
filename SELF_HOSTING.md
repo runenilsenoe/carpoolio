@@ -5,7 +5,7 @@ an ASP.NET Core API, PostgreSQL, and nginx.
 
 ```sh
 cp .env.example .env
-# Set a strong POSTGRES_PASSWORD in .env.
+# Set a strong POSTGRES_PASSWORD plus generated PHONE_ENCRYPTION_KEY and PHONE_HASH_KEY values.
 docker-compose up -d --build
 ```
 
@@ -13,13 +13,42 @@ Open <http://localhost:8080>. The API is intentionally exposed only through
 nginx at `/api`; the browser and API share the same origin, so identity cookies
 remain HttpOnly and no CORS configuration is required.
 
+## GitHub Actions on a self-hosted runner
+
+Keep production secrets outside the checkout because `actions/checkout` cleans
+untracked files. Create `$HOME/.config/carpoolio/production.env` on the Mac,
+copy `.env.example` into it, then set strong values for `POSTGRES_PASSWORD`,
+`PHONE_ENCRYPTION_KEY`, and `PHONE_HASH_KEY`. Generate each phone key with:
+
+```sh
+openssl rand -base64 32
+```
+
+Restrict the file to the runner account:
+
+```sh
+chmod 700 "$HOME/.config/carpoolio"
+chmod 600 "$HOME/.config/carpoolio/production.env"
+```
+
+The deploy workflow uses that path by default. To use another location, set the
+repository Actions variable `CARPOOLIO_DEPLOY_ENV_FILE` to its absolute path.
+The runner account needs Docker access, `docker-compose`, and the .NET 10 SDK;
+the workflow fails before testing if its current Docker context is unavailable.
+
 The database schema is created from `backend/db/init.sql` on an empty database
-volume. To start fresh during development:
+volume. This deployment is intentionally configured as a fresh installation;
+there is no legacy-data conversion step. Phone numbers are stored only as an
+HMAC-SHA-256 lookup hash and AES-GCM ciphertext from the first inserted row.
+
+If the server already has a discarded Carpoolio volume from an earlier test,
+remove it once before the first production deployment:
 
 ```sh
 docker-compose down -v
-docker-compose up -d --build
 ```
+
+Do not use that command after production data has been created.
 
 Back up the database with:
 

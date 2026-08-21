@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   phone_encrypted TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX IF NOT EXISTS users_phone_hash_idx ON users(phone_hash);
 
 CREATE TABLE IF NOT EXISTS sessions (
   token_hash TEXT PRIMARY KEY,

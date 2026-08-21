@@ -5,3 +5,4 @@ node_modules/
 backend/**/bin/
 backend/**/obj/
 .DS_Store
+*.sln.DotSettings.user

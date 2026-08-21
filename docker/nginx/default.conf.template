@@ -11,6 +11,16 @@ server {
     server_name _;
     server_tokens off;
 
+    # Verify nginx can reach the API after deployment.
+    location = /health {
+        proxy_pass http://carpoolio_api/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     location /api/ {
         proxy_pass http://carpoolio_api;
         proxy_http_version 1.1;

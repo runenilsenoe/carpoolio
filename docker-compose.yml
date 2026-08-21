@@ -12,7 +12,11 @@ services:
       - db-data:/var/lib/postgresql/data
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-carpoolio} -d ${POSTGRES_DB:-carpoolio}"]
+      test:
+        [
+          "CMD-SHELL",
+          "psql -U ${POSTGRES_USER:-carpoolio} -d ${POSTGRES_DB:-carpoolio} -tAc \"SELECT to_regclass('public.users') IS NOT NULL AND to_regclass('public.sessions') IS NOT NULL AND to_regclass('public.events') IS NOT NULL AND to_regclass('public.cars') IS NOT NULL AND to_regclass('public.car_members') IS NOT NULL\" | grep -qx t",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -25,6 +29,8 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: Host=db;Port=5432;Database=${POSTGRES_DB:-carpoolio};Username=${POSTGRES_USER:-carpoolio};Password=${POSTGRES_PASSWORD}
+      PHONE_ENCRYPTION_KEY: ${PHONE_ENCRYPTION_KEY:?PHONE_ENCRYPTION_KEY is required}
+      PHONE_HASH_KEY: ${PHONE_HASH_KEY:?PHONE_HASH_KEY is required}
 
   app:
     build: .

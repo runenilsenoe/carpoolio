@@ -10,18 +10,13 @@
 FROM oven/bun:1.2-alpine AS deps
 WORKDIR /app
 COPY package.json bunfig.toml* bun.lock* bun.lockb* ./
-RUN bun install --frozen-lockfile || bun install
+RUN bun install --frozen-lockfile
 
 FROM oven/bun:1.2-alpine AS build
 WORKDIR /app
 ENV NODE_ENV=production
 # Nitro must emit a plain Node server instead of the Cloudflare Worker default.
 ENV NITRO_PRESET=node-server
-# Vite inlines these at build time -> must be the PUBLIC api URL.
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_PUBLISHABLE_KEY
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN bun run build
