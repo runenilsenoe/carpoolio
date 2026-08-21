@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          deploy_dir="/Users/Mediafrasor/carpoolio"
+          deploy_dir="/Users/Mediafrasor/Code/carpoolio"
           env_file="${DEPLOY_ENV_FILE:-$deploy_dir/.env}"
 
           if [[ ! -d "$deploy_dir/.git" ]]; then

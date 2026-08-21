@@ -19,7 +19,7 @@ Create the ignored production env file in the fixed deployment clone. It is not
 removed by the workflow's `git reset --hard`:
 
 ```sh
-cd /Users/Mediafrasor/carpoolio
+cd /Users/Mediafrasor/Code/carpoolio
 cp .env.example .env
 chmod 600 .env
 ```
@@ -31,8 +31,8 @@ Set strong values for `POSTGRES_PASSWORD`, `PHONE_ENCRYPTION_KEY`, and
 openssl rand -base64 32
 ```
 
-The deploy workflow uses `/Users/Mediafrasor/carpoolio/.env` by default. To use
-another location, set the repository Actions variable
+The deploy workflow uses `/Users/Mediafrasor/Code/carpoolio/.env` by default. To
+use another location, set the repository Actions variable
 `CARPOOLIO_DEPLOY_ENV_FILE` to its absolute path.
 The runner account only needs Git, Docker, `docker-compose`, and `curl`; the
 .NET build runs inside Docker.
