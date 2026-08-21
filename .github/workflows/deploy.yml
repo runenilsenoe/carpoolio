@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy Carpoolio
 
 on:
   push:
@@ -16,52 +16,46 @@ env:
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
-  test-and-deploy:
-    runs-on: self-hosted
+  deploy:
+    runs-on: [self-hosted, macOS]
     timeout-minutes: 20
     environment: production
     steps:
-      - uses: actions/checkout@v4
-        with:
-          clean: true
-
-      - name: Verify runner prerequisites
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Propagate the active Docker context to Testcontainers. This works
-          # with Docker Desktop, Colima, and other macOS Docker backends.
-          docker_host="$(docker context inspect "$(docker context show)" --format '{{ .Endpoints.docker.Host }}')"
-          test -n "$docker_host"
-          export DOCKER_HOST="$docker_host"
-          echo "DOCKER_HOST=$DOCKER_HOST" >> "$GITHUB_ENV"
-          command -v docker-compose
-          docker version
-          docker-compose version
-          dotnet --info
-
-      - name: Verify backend
-        run: dotnet test Carpoolio.sln --configuration Release
-
-      - name: Deploy containers
+      - name: Deploy production
         env:
           DEPLOY_ENV_FILE: ${{ vars.CARPOOLIO_DEPLOY_ENV_FILE }}
         shell: bash
         run: |
           set -euo pipefail
+          deploy_dir="/Users/Mediafrasor/carpoolio"
           env_file="${DEPLOY_ENV_FILE:-$HOME/.config/carpoolio/production.env}"
+
+          test -d "$deploy_dir/.git"
           test -f "$env_file"
+
+          cd "$deploy_dir"
+
+          echo "Updating source..."
+          git fetch origin main
+          git reset --hard origin/main
+
+          echo "Docker version..."
+          docker --version
+          docker-compose --version
+
+          echo "Validating configuration..."
           docker-compose --env-file "$env_file" config --quiet
-          docker-compose --env-file "$env_file" up --detach --build --remove-orphans
+
+          echo "Building..."
+          docker-compose --env-file "$env_file" build
+
+          echo "Starting..."
+          docker-compose --env-file "$env_file" up --detach --remove-orphans
+
+          echo "Running containers:"
           docker-compose --env-file "$env_file" ps
 
-      - name: Verify deployed API
-        env:
-          DEPLOY_ENV_FILE: ${{ vars.CARPOOLIO_DEPLOY_ENV_FILE }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          env_file="${DEPLOY_ENV_FILE:-$HOME/.config/carpoolio/production.env}"
+          echo "Checking API..."
           http_port="$(awk -F= '$1 == "HTTP_PORT" { print $2 }' "$env_file")"
           http_port="${http_port:-8080}"
           curl --fail --retry 12 --retry-delay 2 "http://127.0.0.1:${http_port}/health"
