@@ -62,16 +62,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers,
     credentials: "include",
   });
+  const body = await response.text();
   if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as {
-      message?: string;
-    } | null;
+    let payload: { message?: string } | null = null;
+    try {
+      payload = body ? (JSON.parse(body) as { message?: string }) : null;
+    } catch {
+      // Use the generic API error when an upstream returns a non-JSON body.
+    }
     throw new ApiError(
       payload?.message ?? "Something went wrong. Please try again.",
       response.status,
     );
   }
-  return response.json() as Promise<T>;
+  return (body ? JSON.parse(body) : null) as T;
 }
 
 function eventPage(data: ApiEventPage): EventPage {

@@ -14,7 +14,9 @@ public static class IdentityEndpoints
             UserDto? user = null;
             if (context.Request.Cookies.TryGetValue("carpoolio_sid", out var token) && !string.IsNullOrWhiteSpace(token))
                 user = await repository.GetCurrentUser(CarpoolRules.Hash(token));
-            return Results.Json(user);
+            return user is null
+                ? Results.Text("null", "application/json")
+                : Results.Json(user);
         });
         group.MapPost("/identity", async (IdentityInput input, HttpContext context, CarpoolRepository repository, PhoneProtector phones) =>
         {
