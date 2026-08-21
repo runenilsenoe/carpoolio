@@ -15,26 +15,27 @@ remain HttpOnly and no CORS configuration is required.
 
 ## GitHub Actions on a self-hosted runner
 
-Keep production secrets outside the checkout because `actions/checkout` cleans
-untracked files. Create `$HOME/.config/carpoolio/production.env` on the Mac,
-copy `.env.example` into it, then set strong values for `POSTGRES_PASSWORD`,
-`PHONE_ENCRYPTION_KEY`, and `PHONE_HASH_KEY`. Generate each phone key with:
+Create the ignored production env file in the fixed deployment clone. It is not
+removed by the workflow's `git reset --hard`:
+
+```sh
+cd /Users/Mediafrasor/carpoolio
+cp .env.example .env
+chmod 600 .env
+```
+
+Set strong values for `POSTGRES_PASSWORD`, `PHONE_ENCRYPTION_KEY`, and
+`PHONE_HASH_KEY`. Generate each phone key with:
 
 ```sh
 openssl rand -base64 32
 ```
 
-Restrict the file to the runner account:
-
-```sh
-chmod 700 "$HOME/.config/carpoolio"
-chmod 600 "$HOME/.config/carpoolio/production.env"
-```
-
-The deploy workflow uses that path by default. To use another location, set the
-repository Actions variable `CARPOOLIO_DEPLOY_ENV_FILE` to its absolute path.
-The runner account needs Docker access, `docker-compose`, and the .NET 10 SDK;
-the workflow fails before testing if its current Docker context is unavailable.
+The deploy workflow uses `/Users/Mediafrasor/carpoolio/.env` by default. To use
+another location, set the repository Actions variable
+`CARPOOLIO_DEPLOY_ENV_FILE` to its absolute path.
+The runner account only needs Git, Docker, `docker-compose`, and `curl`; the
+.NET build runs inside Docker.
 
 The database schema is created from `backend/db/init.sql` on an empty database
 volume. This deployment is intentionally configured as a fresh installation;

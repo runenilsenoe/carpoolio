@@ -28,10 +28,17 @@ jobs:
         run: |
           set -euo pipefail
           deploy_dir="/Users/Mediafrasor/carpoolio"
-          env_file="${DEPLOY_ENV_FILE:-$HOME/.config/carpoolio/production.env}"
+          env_file="${DEPLOY_ENV_FILE:-$deploy_dir/.env}"
 
-          test -d "$deploy_dir/.git"
-          test -f "$env_file"
+          if [[ ! -d "$deploy_dir/.git" ]]; then
+            echo "::error::Deployment repository not found at $deploy_dir"
+            exit 1
+          fi
+          if [[ ! -f "$env_file" ]]; then
+            echo "::error::Production environment file not found at $env_file"
+            echo "Create it from $deploy_dir/.env.example before running the deployment."
+            exit 1
+          fi
 
           cd "$deploy_dir"
 
