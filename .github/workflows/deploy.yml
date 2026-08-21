@@ -62,7 +62,8 @@ jobs:
           echo "Running containers:"
           docker-compose --env-file "$env_file" ps
 
-          echo "Checking API..."
+          echo "Checking API and create-pool page..."
           http_port="$(awk -F= '$1 == "HTTP_PORT" { print $2 }' "$env_file")"
           http_port="${http_port:-8080}"
-          curl --fail --retry 12 --retry-delay 2 "http://127.0.0.1:${http_port}/health"
+          curl --fail --silent --show-error --retry 12 --retry-delay 2 "http://127.0.0.1:${http_port}/health"
+          curl --fail --silent --show-error --retry 12 --retry-delay 2 --output /dev/null "http://127.0.0.1:${http_port}/new"

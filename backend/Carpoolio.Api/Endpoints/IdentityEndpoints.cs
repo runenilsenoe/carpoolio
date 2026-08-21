@@ -11,8 +11,10 @@ public static class IdentityEndpoints
         var group = api.MapGroup("").WithTags("Identity");
         group.MapGet("/me", async (HttpContext context, CarpoolRepository repository) =>
         {
-            if (!context.Request.Cookies.TryGetValue("carpoolio_sid", out var token) || string.IsNullOrWhiteSpace(token)) return Results.Ok(null);
-            return Results.Ok(await repository.GetCurrentUser(CarpoolRules.Hash(token)));
+            UserDto? user = null;
+            if (context.Request.Cookies.TryGetValue("carpoolio_sid", out var token) && !string.IsNullOrWhiteSpace(token))
+                user = await repository.GetCurrentUser(CarpoolRules.Hash(token));
+            return Results.Json(user);
         });
         group.MapPost("/identity", async (IdentityInput input, HttpContext context, CarpoolRepository repository, PhoneProtector phones) =>
         {

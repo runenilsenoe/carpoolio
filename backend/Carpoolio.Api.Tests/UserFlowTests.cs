@@ -12,6 +12,16 @@ namespace Carpoolio.Api.Tests;
 public class UserFlowTests(ApiFixture fixture)
 {
     [Fact]
+    public async Task Anonymous_me_is_returned_as_json_null()
+    {
+        var response = await fixture.Factory.CreateClient().GetAsync("/api/me");
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+        Assert.Equal("null", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task Visitor_can_create_event_add_car_and_view_it()
     {
         var client = fixture.Factory.CreateClient(new WebApplicationFactoryClientOptions { HandleCookies = true });
