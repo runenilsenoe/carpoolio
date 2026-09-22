@@ -1,6 +1,7 @@
 using Carpoolio.Api.Contracts;
 using Carpoolio.Api.Domain;
 using Carpoolio.Api.Repositories;
+using Carpoolio.Api.Security;
 
 namespace Carpoolio.Api.Endpoints;
 
@@ -11,9 +12,7 @@ public static class IdentityEndpoints
         var group = api.MapGroup("").WithTags("Identity");
         group.MapGet("/me", async (HttpContext context, CarpoolRepository repository) =>
         {
-            UserDto? user = null;
-            if (context.Request.Cookies.TryGetValue("carpoolio_sid", out var token) && !string.IsNullOrWhiteSpace(token))
-                user = await repository.GetCurrentUser(CarpoolRules.Hash(token));
+            var user = await SessionCookie.CurrentUser(context, repository);
             return user is null
                 ? Results.Text("null", "application/json")
                 : Results.Json(user);
@@ -25,7 +24,7 @@ public static class IdentityEndpoints
             var phone = CarpoolRules.NormalizePhone(input.Phone)!;
             var token = CarpoolRules.NewSessionToken();
             var user = await repository.CreateUserWithSession(input.Username.Trim(), phones.Hash(phone), phones.Encrypt(phone), CarpoolRules.Hash(token));
-            context.Response.Cookies.Append("carpoolio_sid", token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, Secure = context.Request.IsHttps, Path = "/", MaxAge = TimeSpan.FromDays(365) });
+            SessionCookie.Append(context, token);
             return Results.Ok(user);
         }).RequireRateLimiting("writes");
         return group;

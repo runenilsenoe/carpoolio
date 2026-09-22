@@ -1,5 +1,10 @@
 import type { CarView, EventPage } from "./carpool-types";
-import type { CarInput, EventInput, IdentityInput } from "./schemas";
+import type {
+  CarInput,
+  EventInput,
+  IdentityInput,
+  PassengerInput,
+} from "./schemas";
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 
@@ -22,7 +27,12 @@ type ApiEventPage = {
     pickupLocation: string;
     departureTime: string | null;
     note: string | null;
-    passengers: Array<{ id: string; userId: string; username: string }>;
+    passengers: Array<{
+      id: string;
+      userId: string;
+      username: string;
+      note: string | null;
+    }>;
   }>;
 };
 
@@ -48,7 +58,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const incoming = getIncomingRequest();
     if (!incoming)
       throw new Error("No request is available during server rendering.");
-    const internalBase = process.env.CARPOOL_API_URL;
+    const internalBase = process.env["CARPOOL_API_URL"];
     url = internalBase
       ? `${internalBase}${path}`
       : new URL(`/api${path}`, incoming.url).toString();
@@ -137,6 +147,11 @@ export const joinCar = (carId: string) =>
   request(`/cars/${carId}/join`, { method: "POST" });
 export const leaveCar = (carId: string) =>
   request(`/cars/${carId}/membership`, { method: "DELETE" });
+export const addPassenger = (carId: string, passenger: PassengerInput) =>
+  request(`/cars/${carId}/passengers`, {
+    method: "POST",
+    body: JSON.stringify(passenger),
+  });
 export const removePassenger = (memberId: string) =>
   request(`/members/${memberId}`, { method: "DELETE" });
 export const deleteCar = (carId: string) =>

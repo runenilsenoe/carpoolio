@@ -44,6 +44,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+await SchemaUpgrade.ApplyAsync(dataSource);
 app.UseForwardedHeaders();
 app.UseRateLimiter();
 app.Use(async (context, next) =>
@@ -111,18 +112,23 @@ eventsApi.MapPost("/{code}/cars", async (string code, CarInput input, HttpContex
     var user = await CurrentUser(context, db);
     if (user is null) return Unauthorized();
     await using var connection = await db.OpenConnectionAsync();
-    var eventId = await Scalar<Guid?>(connection, "SELECT id FROM events WHERE share_code = @code", ("code", code.ToUpperInvariant()));
-    if (eventId is null) return Bad("This carpool no longer exists.");
-    try
+    await using var transaction = await connection.BeginTransactionAsync();
+    var eventOwner = await QueryOne<EventOwner>(connection, "SELECT id, created_by_user_id FROM events WHERE share_code = @code", ("code", code.ToUpperInvariant()));
+    if (eventOwner is null) return Bad("This carpool no longer exists.");
+    // Organisers may add several cars; everyone else gets one per carpool.
+    if (eventOwner.CreatorUserId != user.Id)
     {
-        await Execute(connection, """
-            INSERT INTO cars (event_id, driver_user_id, available_seats, pickup_location, departure_time, note)
-            VALUES (@eventId, @userId, @seats, @pickup, @departure::time, @note)
-            """, ("eventId", eventId), ("userId", user.Id), ("seats", input.AvailableSeats),
-            ("pickup", input.PickupLocation.Trim()), ("departure", CarpoolRules.NullIfEmpty(input.DepartureTime)), ("note", CarpoolRules.NullIfEmpty(input.Note)));
-        return Results.Ok(new { ok = true });
+        await Execute(connection, "SELECT pg_advisory_xact_lock(hashtextextended(@key, 0))", ("key", $"car:{user.Id}:{eventOwner.Id}"));
+        var existingCars = await Scalar<long>(connection, "SELECT count(*) FROM cars WHERE event_id = @eventId AND driver_user_id = @userId", ("eventId", eventOwner.Id), ("userId", user.Id));
+        if (existingCars > 0) return Bad("You already added a car to this carpool.");
     }
-    catch (PostgresException ex) when (ex.SqlState == "23505") { return Bad("You already added a car to this carpool."); }
+    await Execute(connection, """
+        INSERT INTO cars (event_id, driver_user_id, available_seats, pickup_location, departure_time, note)
+        VALUES (@eventId, @userId, @seats, @pickup, @departure::time, @note)
+        """, ("eventId", eventOwner.Id), ("userId", user.Id), ("seats", input.AvailableSeats),
+        ("pickup", input.PickupLocation.Trim()), ("departure", CarpoolRules.NullIfEmpty(input.DepartureTime)), ("note", CarpoolRules.NullIfEmpty(input.Note)));
+    await transaction.CommitAsync();
+    return Results.Ok(new { ok = true });
 });
 
 carsApi.MapPatch("/{carId:guid}", async (Guid carId, CarInput input, HttpContext context, NpgsqlDataSource db) =>
@@ -165,6 +171,33 @@ carsApi.MapPost("/{carId:guid}/join", async (Guid carId, HttpContext context, Np
     await transaction.CommitAsync();
     return Results.Ok(new { ok = true });
 });
+
+carsApi.MapPost("/{carId:guid}/passengers", async (Guid carId, PassengerInput input, HttpContext context, NpgsqlDataSource db, PhoneProtector phones) =>
+{
+    var validation = CarpoolRules.Validate(input);
+    if (validation is not null) return Bad(validation);
+    var user = await CurrentUser(context, db);
+    if (user is null) return Unauthorized();
+    await using var connection = await db.OpenConnectionAsync();
+    await using var transaction = await connection.BeginTransactionAsync();
+    var car = await QueryOne<CarForPassenger>(connection, """
+        SELECT c.id, c.event_id, c.driver_user_id, c.available_seats, e.created_by_user_id
+        FROM cars c JOIN events e ON e.id = c.event_id WHERE c.id = @id FOR UPDATE OF c
+        """, ("id", carId));
+    if (car is null) return Bad("This car no longer exists.");
+    if (car.DriverUserId != user.Id && car.CreatorUserId != user.Id) return Forbidden();
+    var seatsTaken = await Scalar<long>(connection, "SELECT count(*) FROM car_members WHERE car_id = @id", ("id", car.Id));
+    if (seatsTaken >= car.AvailableSeats) return Bad("This car is already full.");
+    // Always a new profile: matching an existing one by phone would reveal who owns that number.
+    var phone = CarpoolRules.NormalizePhone(input.Phone)!;
+    var passengerId = await Scalar<Guid>(connection, """
+        INSERT INTO users (username, phone_hash, phone_encrypted) VALUES (@username, @phoneHash, @phoneEncrypted) RETURNING id
+        """, ("username", input.Username.Trim()), ("phoneHash", phones.Hash(phone)), ("phoneEncrypted", phones.Encrypt(phone)));
+    await Execute(connection, "INSERT INTO car_members (car_id, event_id, user_id, note) VALUES (@carId, @eventId, @userId, @note)",
+        ("carId", car.Id), ("eventId", car.EventId), ("userId", passengerId), ("note", CarpoolRules.NullIfEmpty(input.Note)));
+    await transaction.CommitAsync();
+    return Results.Ok(new { ok = true });
+}).RequireRateLimiting("writes");
 
 carsApi.MapDelete("/{carId:guid}/membership", async (Guid carId, HttpContext context, NpgsqlDataSource db) =>
 {
@@ -230,18 +263,15 @@ eventsApi.MapDelete("/{code}", async (string code, HttpContext context, NpgsqlDa
 
 app.Run();
 
-static async Task<UserDto?> CurrentUser(HttpContext context, NpgsqlDataSource db)
-{
-    if (!context.Request.Cookies.TryGetValue("carpoolio_sid", out var token) || string.IsNullOrWhiteSpace(token)) return null;
-    return await new CarpoolRepository(db).GetCurrentUser(CarpoolRules.Hash(token));
-}
+static async Task<UserDto?> CurrentUser(HttpContext context, NpgsqlDataSource db) =>
+    await SessionCookie.CurrentUser(context, new CarpoolRepository(db));
 
 static async Task<UserDto> CreateIdentity(IdentityInput input, HttpContext context, NpgsqlDataSource db, PhoneProtector phones)
 {
     var phone = CarpoolRules.NormalizePhone(input.Phone)!;
     var token = CarpoolRules.NewSessionToken();
     var user = await new CarpoolRepository(db).CreateUserWithSession(input.Username.Trim(), phones.Hash(phone), phones.Encrypt(phone), CarpoolRules.Hash(token));
-    context.Response.Cookies.Append("carpoolio_sid", token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Lax, Secure = context.Request.IsHttps, Path = "/", MaxAge = TimeSpan.FromDays(365) });
+    SessionCookie.Append(context, token);
     return user;
 }
 
@@ -287,6 +317,7 @@ static async Task<T?> QueryOne<T>(NpgsqlConnection connection, string sql, param
         nameof(UserDto) => new UserDto(reader.GetGuid(0), reader.GetString(1)) as T,
         nameof(CarOwner) => new CarOwner(reader.GetGuid(0), reader.GetGuid(1)) as T,
         nameof(CarForJoin) => new CarForJoin(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetInt32(3)) as T,
+        nameof(CarForPassenger) => new CarForPassenger(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2), reader.GetInt32(3), reader.GetGuid(4)) as T,
         nameof(MemberOwner) => new MemberOwner(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2)) as T,
         nameof(CarOwnerWithCreator) => new CarOwnerWithCreator(reader.GetGuid(0), reader.GetGuid(1), reader.GetGuid(2)) as T,
         nameof(EventOwner) => new EventOwner(reader.GetGuid(0), reader.GetGuid(1)) as T,

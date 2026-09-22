@@ -38,16 +38,17 @@ CREATE TABLE IF NOT EXISTS cars (
   departure_time TIME,
   note TEXT CHECK (char_length(note) <= 200),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (event_id, driver_user_id)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS cars_event_id_idx ON cars(event_id);
+CREATE INDEX IF NOT EXISTS cars_event_driver_idx ON cars(event_id, driver_user_id);
 
 CREATE TABLE IF NOT EXISTS car_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   car_id UUID NOT NULL REFERENCES cars(id) ON DELETE CASCADE,
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  note TEXT CHECK (char_length(note) <= 200),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (car_id, user_id),
   UNIQUE (event_id, user_id)

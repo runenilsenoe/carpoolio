@@ -15,7 +15,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "psql -U ${POSTGRES_USER:-carpoolio} -d ${POSTGRES_DB:-carpoolio} -tAc \"SELECT to_regclass('public.users') IS NOT NULL AND to_regclass('public.sessions') IS NOT NULL AND to_regclass('public.events') IS NOT NULL AND to_regclass('public.cars') IS NOT NULL AND to_regclass('public.car_members') IS NOT NULL\" | grep -qx t",
+          'psql -U ${POSTGRES_USER:-carpoolio} -d ${POSTGRES_DB:-carpoolio} -tAc "SELECT to_regclass(''public.users'') IS NOT NULL AND to_regclass(''public.sessions'') IS NOT NULL AND to_regclass(''public.events'') IS NOT NULL AND to_regclass(''public.cars'') IS NOT NULL AND to_regclass(''public.car_members'') IS NOT NULL" | grep -qx t',
         ]
       interval: 5s
       timeout: 5s

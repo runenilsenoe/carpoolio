@@ -1,6 +1,7 @@
 using Carpoolio.Api.Contracts;
 using Carpoolio.Api.Domain;
 using Carpoolio.Api.Persistence;
+using Carpoolio.Api.Security;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -11,7 +12,7 @@ public sealed class CarpoolRepository(CarpoolDbContext context, NpgsqlDataSource
 {
     // Used by the legacy static endpoint helpers during the transition; normal DI uses the scoped constructor above.
     public CarpoolRepository(NpgsqlDataSource dataSource) : this(
-        new CarpoolDbContext(new DbContextOptionsBuilder<CarpoolDbContext>().UseNpgsql(dataSource.ConnectionString).Options),
+        new CarpoolDbContext(new DbContextOptionsBuilder<CarpoolDbContext>().UseNpgsql(dataSource).Options),
         dataSource) { }
     public async Task<UserDto?> GetCurrentUser(string tokenHash)
     {
@@ -21,11 +22,20 @@ public sealed class CarpoolRepository(CarpoolDbContext context, NpgsqlDataSource
             .SingleOrDefaultAsync();
     }
 
+    /// <summary>Extends the session at most once a day so reads don't turn into a write per request.</summary>
+    public async Task RenewSession(string tokenHash, TimeSpan lifetime)
+    {
+        var now = DateTimeOffset.UtcNow;
+        await context.Sessions
+            .Where(session => session.TokenHash == tokenHash && session.ExpiresAt < now.Add(lifetime).AddDays(-1))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(session => session.ExpiresAt, now.Add(lifetime)));
+    }
+
     public async Task<UserDto> CreateUserWithSession(string username, string phoneHash, string encryptedPhone, string tokenHash)
     {
         var user = new User { Username = username, PhoneHash = phoneHash, PhoneEncrypted = encryptedPhone };
         context.Users.Add(user);
-        context.Sessions.Add(new Session { TokenHash = tokenHash, User = user, ExpiresAt = DateTimeOffset.UtcNow.AddYears(1) });
+        context.Sessions.Add(new Session { TokenHash = tokenHash, User = user, ExpiresAt = DateTimeOffset.UtcNow.Add(SessionCookie.Lifetime) });
         await context.SaveChangesAsync();
         return new UserDto(user.Id, user.Username);
     }
@@ -52,7 +62,7 @@ public sealed class CarpoolRepository(CarpoolDbContext context, NpgsqlDataSource
         await using var command = new NpgsqlCommand("""
             SELECT e.id, e.name, e.date, e.time, e.destination, e.share_code, e.created_by_user_id,
               c.id, c.driver_user_id, driver.username, c.available_seats, c.pickup_location, c.departure_time, c.note,
-              cm.id, cm.user_id, passenger.username
+              cm.id, cm.user_id, passenger.username, cm.note
             FROM events e LEFT JOIN cars c ON c.event_id = e.id
             LEFT JOIN users driver ON driver.id = c.driver_user_id
             LEFT JOIN car_members cm ON cm.car_id = c.id
@@ -72,7 +82,7 @@ public sealed class CarpoolRepository(CarpoolDbContext context, NpgsqlDataSource
             var carId = reader.GetGuid(7);
             if (!cars.TryGetValue(carId, out var car))
                 cars[carId] = car = new CarDto(carId, reader.GetGuid(8), reader.GetString(9), reader.GetInt32(10), reader.GetString(11), reader.IsDBNull(12) ? null : reader.GetFieldValue<TimeOnly>(12).ToString("HH:mm"), reader.IsDBNull(13) ? null : reader.GetString(13), []);
-            if (!reader.IsDBNull(14)) car.Passengers.Add(new PassengerDto(reader.GetGuid(14), reader.GetGuid(15), reader.GetString(16)));
+            if (!reader.IsDBNull(14)) car.Passengers.Add(new PassengerDto(reader.GetGuid(14), reader.GetGuid(15), reader.GetString(16), reader.IsDBNull(17) ? null : reader.GetString(17)));
         }
         return eventDto is null ? null : new EventPageDto(eventDto, me?.Id == creatorId, me, cars.Values.ToList());
     }

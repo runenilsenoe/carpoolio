@@ -1,17 +1,38 @@
-## Development
+# Carpoolio
 
-You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Carpoolio is a small, account-free tool for organising rides to an event. Create
+a carpool, share its link, and let people offer or reserve seats.
+
+## Stack
+
+- React and TanStack Start (SSR), TypeScript and Tailwind CSS
+- ASP.NET Core API in `backend/`
+- PostgreSQL, with nginx as the single public entrypoint
+
+## Run locally
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+git clone <repository-url>
+cd carpoolio
+cp .env.example .env
+# Set POSTGRES_PASSWORD, dashboard credentials, and generate the phone keys
+# with: openssl rand -base64 32
+docker-compose up --build
 ```
 
-## Built with
+Open <http://localhost:8080>. See [SELF_HOSTING.md](SELF_HOSTING.md) for a
+complete deployment and backup guide.
 
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
+## Development commands
+
+```sh
+bun install
+bun run check
+bun test
+dotnet test
+```
+
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+Security issues should follow [SECURITY.md](SECURITY.md).

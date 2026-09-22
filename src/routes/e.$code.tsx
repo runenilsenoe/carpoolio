@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createFileRoute,
   Link,
   notFound,
   useRouter,
 } from "@tanstack/react-router";
-import { CalendarDays, MapPin, Plus, Settings2, Share2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +18,14 @@ import {
 import { CarCard } from "@/components/CarCard";
 import { CarFormDialog } from "@/components/CarFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { EventHeader } from "@/components/EventHeader";
 import {
   EventFormFields,
   type EventFormState,
 } from "@/components/EventFormFields";
 import { IdentityDialog } from "@/components/IdentityDialog";
 import {
+  addPassenger,
   addCar,
   deleteCar,
   deleteEvent,
@@ -99,6 +101,7 @@ function EventPage() {
   const [carFormOpen, setCarFormOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<CarView | null>(null);
   const [joinTarget, setJoinTarget] = useState<CarView | null>(null);
+  const [passengerTarget, setPassengerTarget] = useState<CarView | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
   const [deleteEventOpen, setDeleteEventOpen] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>({
@@ -109,14 +112,25 @@ function EventPage() {
   });
   const [eventError, setEventError] = useState<string | null>(null);
 
-  const myCar = me ? cars.find((c) => c.driverUserId === me.id) : undefined;
-  const eventTime = formatTime(event.time);
+  // Stable identity: CarFormDialog resets its fields whenever this changes.
+  const carFormInitial = useMemo(
+    () =>
+      editingCar
+        ? {
+            available_seats: editingCar.availableSeats,
+            pickup_location: editingCar.pickupLocation,
+            departure_time: formatTime(editingCar.departureTime) ?? "",
+            note: editingCar.note ?? "",
+          }
+        : null,
+    [editingCar],
+  );
 
+  const myCar = me ? cars.find((c) => c.driverUserId === me.id) : undefined;
   async function refresh() {
     await router.invalidate();
   }
 
-  /** Runs an action, asking for identity first when the visitor has none. */
   function withIdentity(action: () => Promise<void>) {
     if (!me) {
       setAfterIdentity(() => action);
@@ -209,54 +223,12 @@ function EventPage() {
 
   return (
     <main className="mx-auto min-h-dvh max-w-md px-5 pt-8 pb-28">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link
-            to="/"
-            className="text-sm font-semibold tracking-tight text-primary"
-          >
-            Carpoolio
-          </Link>
-          <h1 className="mt-3 font-display text-4xl leading-tight text-balance">
-            {event.name}
-          </h1>
-          <p className="mt-3 flex items-center gap-2 text-muted-foreground">
-            <CalendarDays className="size-4 shrink-0" aria-hidden />
-            <span>
-              {formatEventDate(event.date)}
-              {eventTime ? ` · ${eventTime}` : ""}
-            </span>
-          </p>
-          {event.destination ? (
-            <p className="mt-1.5 flex items-center gap-2 text-muted-foreground">
-              <MapPin className="size-4 shrink-0" aria-hidden />
-              {event.destination}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex shrink-0 gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={shareEvent}
-            className="size-10 rounded-full"
-            aria-label="Share this carpool"
-          >
-            <Share2 className="size-5" />
-          </Button>
-          {isCreator ? (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setManageOpen(true)}
-              className="size-10 rounded-full"
-              aria-label="Manage this carpool"
-            >
-              <Settings2 className="size-5" />
-            </Button>
-          ) : null}
-        </div>
-      </div>
+      <EventHeader
+        event={event}
+        isCreator={isCreator}
+        onManage={() => setManageOpen(true)}
+        onShare={shareEvent}
+      />
 
       <section aria-label="Cars" className="mt-8 space-y-4">
         {cars.length === 0 ? (
@@ -281,6 +253,7 @@ function EventPage() {
               destination={event.destination}
               busy={busy}
               onJoin={handleJoin}
+              onAddPassenger={setPassengerTarget}
               onLeave={(c) =>
                 guarded(
                   () => leaveCar(c.id).then(() => undefined),
@@ -308,7 +281,7 @@ function EventPage() {
         )}
       </section>
 
-      {cars.length > 0 && !myCar ? (
+      {cars.length > 0 && (isCreator || !myCar) ? (
         <div className="fixed inset-x-0 bottom-0 border-t border-border bg-background/90 px-5 py-4 backdrop-blur">
           <div className="mx-auto max-w-md">
             <Button
@@ -337,22 +310,32 @@ function EventPage() {
         }}
       />
 
+      <IdentityDialog
+        open={!!passengerTarget}
+        onOpenChange={(open) => {
+          if (!open) setPassengerTarget(null);
+        }}
+        title="Add passenger"
+        description={`Add someone to ${passengerTarget?.driverName ?? "this car"}'s passenger list. Their phone number remains private.`}
+        submitLabel="Add passenger"
+        showNote
+        submitIdentity={async (identity) => {
+          const car = passengerTarget;
+          if (!car) return;
+          await addPassenger(car.id, identity);
+          toast.success(`${identity.username} was added`);
+          await refresh();
+        }}
+        onIdentified={() => undefined}
+      />
+
       <CarFormDialog
         open={carFormOpen}
         onOpenChange={setCarFormOpen}
         driverName={me?.username ?? "you"}
         title={editingCar ? "Edit your car" : "Add your car"}
         submitLabel={editingCar ? "Save changes" : "Add car"}
-        initial={
-          editingCar
-            ? {
-                available_seats: editingCar.availableSeats,
-                pickup_location: editingCar.pickupLocation,
-                departure_time: formatTime(editingCar.departureTime) ?? "",
-                note: editingCar.note ?? "",
-              }
-            : null
-        }
+        initial={carFormInitial}
         onSubmit={submitCar}
       />
 

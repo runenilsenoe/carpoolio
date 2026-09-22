@@ -13,6 +13,10 @@ public static class CarpoolRules
             ? "Name must be between 2 and 40 characters."
             : NormalizePhone(input.Phone) is null ? "Please enter a valid phone number." : null;
 
+    public static string? Validate(PassengerInput input) =>
+        Validate(new IdentityInput(input.Username, input.Phone))
+        ?? (input.Note?.Trim().Length > 200 ? "Keep the note under 200 characters." : null);
+
     public static string? Validate(EventInput input) =>
         string.IsNullOrWhiteSpace(input.Name) || input.Name.Trim().Length is < 2 or > 80
             ? "Please give the carpool a name."
