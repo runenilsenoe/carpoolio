@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createFileRoute,
   Link,
   notFound,
   useRouter,
 } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,7 +35,7 @@ import {
   removePassenger,
   updateCar,
   updateEvent,
-} from "@/lib/carpool.functions";
+} from "@/lib/api";
 import type { CarView } from "@/lib/carpool-types";
 import type { CarInput } from "@/lib/schemas";
 import { eventSchema } from "@/lib/schemas";
@@ -45,7 +44,7 @@ import { errorMessage } from "@/lib/error-message";
 
 export const Route = createFileRoute("/e/$code")({
   loader: async ({ params }) => {
-    const data = await getEventPage({ data: { code: params.code } });
+    const data = await getEventPage(params.code);
     if (!data) throw notFound();
     return data;
   },
@@ -96,16 +95,6 @@ function EventPage() {
   const router = useRouter();
   const { event, cars, me, isCreator } = data;
 
-  const runAddCar = useServerFn(addCar);
-  const runAddPassenger = useServerFn(addPassenger);
-  const runUpdateCar = useServerFn(updateCar);
-  const runJoinCar = useServerFn(joinCar);
-  const runLeaveCar = useServerFn(leaveCar);
-  const runDeleteCar = useServerFn(deleteCar);
-  const runRemovePassenger = useServerFn(removePassenger);
-  const runUpdateEvent = useServerFn(updateEvent);
-  const runDeleteEvent = useServerFn(deleteEvent);
-
   const [busy, setBusy] = useState(false);
   const [identityOpen, setIdentityOpen] = useState(false);
   const [afterIdentity, setAfterIdentity] = useState<PendingAction>(null);
@@ -122,6 +111,20 @@ function EventPage() {
     destination: event.destination ?? "",
   });
   const [eventError, setEventError] = useState<string | null>(null);
+
+  // Stable identity: CarFormDialog resets its fields whenever this changes.
+  const carFormInitial = useMemo(
+    () =>
+      editingCar
+        ? {
+            available_seats: editingCar.availableSeats,
+            pickup_location: editingCar.pickupLocation,
+            departure_time: formatTime(editingCar.departureTime) ?? "",
+            note: editingCar.note ?? "",
+          }
+        : null,
+    [editingCar],
+  );
 
   const myCar = me ? cars.find((c) => c.driverUserId === me.id) : undefined;
   async function refresh() {
@@ -161,10 +164,10 @@ function EventPage() {
 
   async function submitCar(values: CarInput) {
     if (editingCar) {
-      await runUpdateCar({ data: { carId: editingCar.id, ...values } });
+      await updateCar(editingCar.id, values);
       toast.success("Car updated");
     } else {
-      await runAddCar({ data: { code: event.share_code, ...values } });
+      await addCar(event.share_code, values);
       toast.success("Your car is on the list");
     }
     await refresh();
@@ -179,7 +182,7 @@ function EventPage() {
     if (!car) return;
     setJoinTarget(null);
     await guarded(
-      () => runJoinCar({ data: { carId: car.id } }).then(() => undefined),
+      () => joinCar(car.id).then(() => undefined),
       `You're riding with ${car.driverName}`,
     );
   }
@@ -194,10 +197,7 @@ function EventPage() {
     }
     setEventError(null);
     await guarded(
-      () =>
-        runUpdateEvent({
-          data: { code: event.share_code, ...parsed.data },
-        }).then(() => undefined),
+      () => updateEvent(event.share_code, parsed.data).then(() => undefined),
       "Carpool updated",
     );
     setManageOpen(false);
@@ -256,10 +256,7 @@ function EventPage() {
               onAddPassenger={setPassengerTarget}
               onLeave={(c) =>
                 guarded(
-                  () =>
-                    runLeaveCar({ data: { carId: c.id } }).then(
-                      () => undefined,
-                    ),
+                  () => leaveCar(c.id).then(() => undefined),
                   "You left the car",
                 )
               }
@@ -269,19 +266,13 @@ function EventPage() {
               }}
               onDelete={(c) =>
                 guarded(
-                  () =>
-                    runDeleteCar({ data: { carId: c.id } }).then(
-                      () => undefined,
-                    ),
+                  () => deleteCar(c.id).then(() => undefined),
                   "Car removed",
                 )
               }
               onRemovePassenger={(memberId, name) =>
                 guarded(
-                  () =>
-                    runRemovePassenger({ data: { memberId } }).then(
-                      () => undefined,
-                    ),
+                  () => removePassenger(memberId).then(() => undefined),
                   `${name} was removed`,
                 )
               }
@@ -331,9 +322,7 @@ function EventPage() {
         submitIdentity={async (identity) => {
           const car = passengerTarget;
           if (!car) return;
-          await runAddPassenger({
-            data: { carId: car.id, identity },
-          });
+          await addPassenger(car.id, identity);
           toast.success(`${identity.username} was added`);
           await refresh();
         }}
@@ -346,16 +335,7 @@ function EventPage() {
         driverName={me?.username ?? "you"}
         title={editingCar ? "Edit your car" : "Add your car"}
         submitLabel={editingCar ? "Save changes" : "Add car"}
-        initial={
-          editingCar
-            ? {
-                available_seats: editingCar.availableSeats,
-                pickup_location: editingCar.pickupLocation,
-                departure_time: formatTime(editingCar.departureTime) ?? "",
-                note: editingCar.note ?? "",
-              }
-            : null
-        }
+        initial={carFormInitial}
         onSubmit={submitCar}
       />
 
@@ -434,7 +414,7 @@ function EventPage() {
         onConfirm={() => {
           void (async () => {
             try {
-              await runDeleteEvent({ data: { code: event.share_code } });
+              await deleteEvent(event.share_code);
               toast.success("Carpool deleted");
               await router.navigate({ to: "/" });
             } catch (err) {

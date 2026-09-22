@@ -1,0 +1,69 @@
+name: Deploy Carpoolio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: carpoolio-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, macOS]
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - name: Deploy production
+        env:
+          DEPLOY_ENV_FILE: ${{ vars.CARPOOLIO_DEPLOY_ENV_FILE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_dir="/Users/Mediafrasor/Code/carpoolio"
+          env_file="${DEPLOY_ENV_FILE:-$deploy_dir/.env}"
+
+          if [[ ! -d "$deploy_dir/.git" ]]; then
+            echo "::error::Deployment repository not found at $deploy_dir"
+            exit 1
+          fi
+          if [[ ! -f "$env_file" ]]; then
+            echo "::error::Production environment file not found at $env_file"
+            echo "Create it from $deploy_dir/.env.example before running the deployment."
+            exit 1
+          fi
+
+          cd "$deploy_dir"
+
+          echo "Updating source..."
+          git fetch origin main
+          git reset --hard origin/main
+
+          echo "Docker version..."
+          docker --version
+          docker-compose --version
+
+          echo "Validating configuration..."
+          docker-compose --env-file "$env_file" config --quiet
+
+          echo "Building..."
+          docker-compose --env-file "$env_file" build
+
+          echo "Starting..."
+          docker-compose --env-file "$env_file" up --detach --remove-orphans
+
+          echo "Running containers:"
+          docker-compose --env-file "$env_file" ps
+
+          echo "Checking API and create-pool page..."
+          http_port="$(awk -F= '$1 == "HTTP_PORT" { print $2 }' "$env_file")"
+          http_port="${http_port:-8080}"
+          curl --fail --silent --show-error --retry 12 --retry-delay 2 "http://127.0.0.1:${http_port}/health"
+          curl --fail --silent --show-error --retry 12 --retry-delay 2 --output /dev/null "http://127.0.0.1:${http_port}/new"

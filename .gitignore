@@ -2,8 +2,12 @@
 .env.*
 !.env.example
 .DS_Store
-node_modules
-.output
-dist
-.vinxi
-coverage
+node_modules/
+.output/
+.wrangler/
+dist/
+.vinxi/
+coverage/
+backend/**/bin/
+backend/**/obj/
+*.sln.DotSettings.user

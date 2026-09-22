@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { createIdentity } from "@/lib/carpool.functions";
+import { createIdentity } from "@/lib/api";
 import { nameSchema, phoneSchema } from "@/lib/schemas";
 import { formatPhone, normalizePhoneOrNull } from "@/lib/phone";
 import {
@@ -50,7 +49,6 @@ export function IdentityDialog({
   submitLabel,
   showNote = false,
 }: Props) {
-  const submit = useServerFn(createIdentity);
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
@@ -88,7 +86,7 @@ export function IdentityDialog({
       if (submitIdentity) {
         await submitIdentity(identity);
       } else {
-        await submit({ data: identity });
+        await createIdentity(identity);
       }
       await onIdentified();
       onOpenChange(false);

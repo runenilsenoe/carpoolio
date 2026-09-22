@@ -4,11 +4,11 @@ import { Check, Copy, Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { getEventPage } from "@/lib/carpool.functions";
+import { getEventPage } from "@/lib/api";
 
 export const Route = createFileRoute("/s/$code")({
   loader: async ({ params }) => {
-    const data = await getEventPage({ data: { code: params.code } });
+    const data = await getEventPage(params.code);
     if (!data) throw notFound();
     return data;
   },
