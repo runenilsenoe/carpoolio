@@ -55,8 +55,8 @@ services:
       - api
     volumes:
       - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
-    ports:
-      - "${HTTP_PORT:-8080}:80"
+    expose:
+      - "80"
 
 volumes:
   db-data:
