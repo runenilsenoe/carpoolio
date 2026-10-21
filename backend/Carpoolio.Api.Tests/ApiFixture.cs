@@ -29,9 +29,12 @@ public sealed class ApiFixture : IAsyncLifetime
         var schema = await File.ReadAllTextAsync(SchemaPath);
         await using var command = new NpgsqlCommand(schema, connection);
         await command.ExecuteNonQueryAsync();
+        // Exercise a Coolify database URL pasted as a complete .env assignment.
+        var database = new NpgsqlConnectionStringBuilder(_database.GetConnectionString());
+        var databaseUrl = $"postgres://{Uri.EscapeDataString(database.Username!)}:{Uri.EscapeDataString(database.Password!)}@{database.Host}:{database.Port}/{database.Database}";
         var settings = new Dictionary<string, string?>
         {
-            ["DATABASE_URL"] = _database.GetConnectionString(),
+            ["DATABASE_URL"] = $"DATABASE_URL={databaseUrl}",
             ["PHONE_ENCRYPTION_KEY"] = Convert.ToBase64String(new byte[32]),
             ["PHONE_HASH_KEY"] = Convert.ToBase64String(Enumerable.Repeat((byte)1, 32).ToArray()),
             ["DASHBOARD_USERNAME"] = "dashboard-user",

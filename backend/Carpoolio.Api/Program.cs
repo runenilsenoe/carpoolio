@@ -13,9 +13,9 @@ using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Logging.AddJsonConsole();
-var connectionString = builder.Configuration.GetConnectionString("Postgres")
+var connectionString = PostgresConnectionString.Parse(builder.Configuration.GetConnectionString("Postgres")
     ?? builder.Configuration["DATABASE_URL"]
-    ?? throw new InvalidOperationException("DATABASE_URL is required.");
+    ?? throw new InvalidOperationException("DATABASE_URL is required."));
 var dataSource = NpgsqlDataSource.Create(connectionString);
 builder.Services.AddSingleton(dataSource);
 builder.Services.AddDbContext<CarpoolDbContext>(options => options.UseNpgsql(connectionString));

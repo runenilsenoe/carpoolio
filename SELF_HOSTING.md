@@ -1,5 +1,26 @@
 # Self-hosting Carpoolio
 
+## Coolify with an external PostgreSQL database
+
+The current Compose file connects to an existing database using `DATABASE_URL`.
+Use the database's internal address, and connect the application to its Docker
+network in Coolify. Both PostgreSQL URLs (`postgres://` or `postgresql://`) and
+Npgsql connection strings (`Host=...;Database=...;Username=...;Password=...`)
+are supported. URL-encode special characters in URL usernames and passwords.
+Common URL options such as `sslmode=require` are preserved.
+Paste only the connection value into Coolify's `DATABASE_URL` field; the API
+also accepts an accidentally pasted `DATABASE_URL=...` assignment.
+
+On a fresh external database, run `backend/db/init.sql` once before using the
+app. The standalone database's init directory is no longer part of this stack.
+Set the phone keys and dashboard credentials from `.env.example` in Coolify,
+and route the domain to the `nginx` service on port 80. After deploying,
+`/health` should return `Healthy` and `/api/me` should return JSON `null` for an
+anonymous visitor. A 502 response indicates the API or its proxy is unavailable;
+inspect the API container logs before changing login settings.
+
+## Earlier standalone stack
+
 Carpoolio now runs as a small four-container stack: the React/TanStack web app,
 an ASP.NET Core API, PostgreSQL, and nginx.
 
