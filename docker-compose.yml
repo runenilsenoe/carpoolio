@@ -5,7 +5,7 @@ services:
     build: ./backend/Carpoolio.Api
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${POSTGRES_DB:?POSTGRES_DB is required}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       PHONE_ENCRYPTION_KEY: ${PHONE_ENCRYPTION_KEY:?required}
       PHONE_HASH_KEY: ${PHONE_HASH_KEY:?required}
       DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:?required}
