@@ -11,8 +11,8 @@ Common URL options such as `sslmode=require` are preserved.
 Paste only the connection value into Coolify's `DATABASE_URL` field; the API
 also accepts an accidentally pasted `DATABASE_URL=...` assignment.
 
-On a fresh external database, run `backend/db/init.sql` once before using the
-app. The standalone database's init directory is no longer part of this stack.
+The API initializes a fresh external database and applies idempotent schema
+upgrades during startup, using the embedded `backend/db/init.sql` schema.
 Set the phone keys and dashboard credentials from `.env.example` in Coolify,
 and route the domain to the `nginx` service on port 80. After deploying,
 `/health` should return `Healthy` and `/api/me` should return JSON `null` for an

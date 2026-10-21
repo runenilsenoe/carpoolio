@@ -2,7 +2,9 @@ name: carpoolio
 
 services:
   api:
-    build: ./backend/Carpoolio.Api
+    build:
+      context: ./backend
+      dockerfile: Carpoolio.Api/Dockerfile
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}

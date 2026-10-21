@@ -25,10 +25,7 @@ public sealed class ApiFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _database.StartAsync();
-        await using var connection = await NpgsqlDataSource.Create(_database.GetConnectionString()).OpenConnectionAsync();
-        var schema = await File.ReadAllTextAsync(SchemaPath);
-        await using var command = new NpgsqlCommand(schema, connection);
-        await command.ExecuteNonQueryAsync();
+        // Leave the database empty: API startup must initialize external databases too.
         // Exercise a Coolify database URL pasted as a complete .env assignment.
         var database = new NpgsqlConnectionStringBuilder(_database.GetConnectionString());
         var databaseUrl = $"postgres://{Uri.EscapeDataString(database.Username!)}:{Uri.EscapeDataString(database.Password!)}@{database.Host}:{database.Port}/{database.Database}";

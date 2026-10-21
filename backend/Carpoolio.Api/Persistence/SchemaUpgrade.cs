@@ -3,8 +3,8 @@ using Npgsql;
 namespace Carpoolio.Api.Persistence;
 
 /// <summary>
-/// Brings databases created from an older backend/db/init.sql up to date. Docker only runs init.sql on an
-/// empty volume, so every statement here must be idempotent and mirrored in init.sql.
+/// Initializes external databases and brings existing installations up to date.
+/// Every statement must be idempotent and mirrored in backend/db/init.sql.
 /// </summary>
 public static class SchemaUpgrade
 {
@@ -16,7 +16,16 @@ public static class SchemaUpgrade
 
     public static async Task ApplyAsync(NpgsqlDataSource dataSource)
     {
-        await using var command = dataSource.CreateCommand(Sql);
+        await using var connection = await dataSource.OpenConnectionAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        // Serialize initialization when more than one API starts at the same time.
+        await using var schemaLock = new NpgsqlCommand("SELECT pg_advisory_xact_lock(782341905)", connection, transaction);
+        await schemaLock.ExecuteNonQueryAsync();
+        using var schema = typeof(SchemaUpgrade).Assembly.GetManifestResourceStream("Carpoolio.Schema.sql")
+            ?? throw new InvalidOperationException("The embedded database schema is missing.");
+        using var reader = new StreamReader(schema);
+        await using var command = new NpgsqlCommand(await reader.ReadToEndAsync() + "\n" + Sql, connection, transaction);
         await command.ExecuteNonQueryAsync();
+        await transaction.CommitAsync();
     }
 }

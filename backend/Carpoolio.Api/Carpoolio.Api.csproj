@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../db/init.sql" LogicalName="Carpoolio.Schema.sql" />
     <Content Update="@(Content)">
       <Visible Condition="'%(NuGetItemType)' == 'Content'">false</Visible>
     </Content>

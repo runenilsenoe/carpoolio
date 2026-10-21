@@ -1,9 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /src
-COPY Carpoolio.Api.csproj ./
-RUN dotnet restore
-COPY . ./
-RUN dotnet publish -c Release -o /app/publish --no-restore
+COPY Carpoolio.Api/Carpoolio.Api.csproj Carpoolio.Api/
+RUN dotnet restore Carpoolio.Api/Carpoolio.Api.csproj
+COPY Carpoolio.Api/ Carpoolio.Api/
+COPY db/ db/
+RUN dotnet publish Carpoolio.Api/Carpoolio.Api.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
 WORKDIR /app
