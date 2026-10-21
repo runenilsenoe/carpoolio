@@ -1,38 +1,15 @@
 name: carpoolio
 
 services:
-  db:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-carpoolio}
-      POSTGRES_USER: ${POSTGRES_USER:-carpoolio}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
-    volumes:
-      - db-data:/var/lib/postgresql/data
-      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'psql -U ${POSTGRES_USER:-carpoolio} -d ${POSTGRES_DB:-carpoolio} -tAc "SELECT to_regclass(''public.users'') IS NOT NULL AND to_regclass(''public.sessions'') IS NOT NULL AND to_regclass(''public.events'') IS NOT NULL AND to_regclass(''public.cars'') IS NOT NULL AND to_regclass(''public.car_members'') IS NOT NULL" | grep -qx t',
-        ]
-      interval: 5s
-      timeout: 5s
-      retries: 20
-
   api:
     build: ./backend/Carpoolio.Api
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      DATABASE_URL: Host=db;Port=5432;Database=${POSTGRES_DB:-carpoolio};Username=${POSTGRES_USER:-carpoolio};Password=${POSTGRES_PASSWORD}
-      PHONE_ENCRYPTION_KEY: ${PHONE_ENCRYPTION_KEY:?PHONE_ENCRYPTION_KEY is required}
-      PHONE_HASH_KEY: ${PHONE_HASH_KEY:?PHONE_HASH_KEY is required}
-      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:?DASHBOARD_USERNAME is required}
-      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?DASHBOARD_PASSWORD is required}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      PHONE_ENCRYPTION_KEY: ${PHONE_ENCRYPTION_KEY:?required}
+      PHONE_HASH_KEY: ${PHONE_HASH_KEY:?required}
+      DASHBOARD_USERNAME: ${DASHBOARD_USERNAME:?required}
+      DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD:?required}
       LOG_FILE_PATH: /app/logs/api.jsonl
     volumes:
       - api-logs:/app/logs
