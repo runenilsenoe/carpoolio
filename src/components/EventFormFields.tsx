@@ -25,23 +25,23 @@ export function EventFormFields({ value, onChange }: Props) {
           id="event-name"
           value={value.name}
           onChange={(e) => set({ name: e.target.value })}
-          placeholder="Egde Summer Party"
+          placeholder="Summer party"
           maxLength={80}
           className="h-12 rounded-xl"
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
+        <div className="min-w-0 space-y-2">
           <Label htmlFor="event-date">Date</Label>
           <Input
             id="event-date"
             type="date"
             value={value.date}
             onChange={(e) => set({ date: e.target.value })}
-            className="h-12 rounded-xl"
+            className="h-12 min-w-0 max-w-full appearance-none rounded-xl [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:inline-flex"
           />
         </div>
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <Label htmlFor="event-time">
             Time <span className="text-muted-foreground">(optional)</span>
           </Label>
@@ -50,7 +50,7 @@ export function EventFormFields({ value, onChange }: Props) {
             type="time"
             value={value.time}
             onChange={(e) => set({ time: e.target.value })}
-            className="h-12 rounded-xl"
+            className="h-12 min-w-0 max-w-full appearance-none rounded-xl [&::-webkit-date-and-time-value]:text-left [&::-webkit-datetime-edit]:inline-flex"
           />
         </div>
       </div>
