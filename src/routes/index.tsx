@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Car, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -40,9 +40,46 @@ function Index() {
           Create a carpool, share the link, and let everyone find a seat.
         </p>
 
+        <figure className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-soft">
+          <figcaption className="mb-4 text-xs font-medium tracking-wide text-muted-foreground">
+            A little example
+          </figcaption>
+          <div className="flex items-center gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Car className="size-6" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold">Alex is driving</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                City centre → Summer party
+              </p>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+            {["Sam", "Jo"].map((name) => (
+              <span
+                key={name}
+                className="inline-flex items-center gap-2 rounded-full bg-secondary py-1.5 pr-3 pl-1.5 text-xs"
+              >
+                <span
+                  className="flex size-6 items-center justify-center rounded-full bg-primary/10 font-medium text-primary"
+                  aria-hidden
+                >
+                  {name[0]}
+                </span>
+                {name}
+              </span>
+            ))}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 px-3 py-2 text-xs font-medium text-primary">
+              <Plus className="size-3.5" aria-hidden />
+              1 seat free
+            </span>
+          </div>
+        </figure>
+
         <Button
           asChild
-          className="mt-10 h-14 w-full rounded-2xl text-base shadow-soft"
+          className="mt-8 h-14 w-full rounded-2xl text-base shadow-soft"
         >
           <Link to="/new">
             Create a carpool
