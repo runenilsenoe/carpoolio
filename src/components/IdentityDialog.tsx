@@ -106,7 +106,7 @@ export function IdentityDialog({
           </DialogTitle>
           <DialogDescription>
             {description ??
-              "Just a name and a phone number — no account needed. Your number stays private and is never shown to others."}
+              "Just a name and a phone number — no account needed. If you drive, the organiser can use your number to contact you. It isn't shown to other participants."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} noValidate className="space-y-4">

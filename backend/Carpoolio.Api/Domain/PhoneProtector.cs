@@ -21,6 +21,16 @@ public sealed class PhoneProtector(IConfiguration configuration)
         return Convert.ToBase64String(nonce.Concat(tag).Concat(cipher).ToArray());
     }
 
+    public string Decrypt(string encryptedPhone)
+    {
+        var payload = Convert.FromBase64String(encryptedPhone);
+        if (payload.Length < 28) throw new CryptographicException("Invalid encrypted phone number.");
+        var plaintext = new byte[payload.Length - 28];
+        using var aes = new AesGcm(_encryptionKey, 16);
+        aes.Decrypt(payload.AsSpan(0, 12), payload.AsSpan(28), payload.AsSpan(12, 16), plaintext);
+        return Encoding.UTF8.GetString(plaintext);
+    }
+
     private static byte[] ReadKey(IConfiguration configuration, string name)
     {
         var value = configuration[name] ?? throw new InvalidOperationException($"{name} is required.");

@@ -71,8 +71,7 @@ function Index() {
               </span>
             ))}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 px-3 py-2 text-xs font-medium text-primary">
-              <Plus className="size-3.5" aria-hidden />
-              1 seat free
+              <Plus className="size-3.5" aria-hidden />1 seat free
             </span>
           </div>
         </figure>

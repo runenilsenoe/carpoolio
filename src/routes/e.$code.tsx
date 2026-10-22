@@ -5,7 +5,7 @@ import {
   notFound,
   useRouter,
 } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { MessageSquare, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,6 +19,7 @@ import { CarCard } from "@/components/CarCard";
 import { CarFormDialog } from "@/components/CarFormDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { EventHeader } from "@/components/EventHeader";
+import { DriverSmsDialog } from "@/components/DriverSmsDialog";
 import {
   EventFormFields,
   type EventFormState,
@@ -103,6 +104,7 @@ function EventPage() {
   const [joinTarget, setJoinTarget] = useState<CarView | null>(null);
   const [passengerTarget, setPassengerTarget] = useState<CarView | null>(null);
   const [manageOpen, setManageOpen] = useState(false);
+  const [smsOpen, setSmsOpen] = useState(false);
   const [deleteEventOpen, setDeleteEventOpen] = useState(false);
   const [eventForm, setEventForm] = useState<EventFormState>({
     name: event.name,
@@ -394,6 +396,19 @@ function EventPage() {
             >
               Save changes
             </Button>
+            {isCreator ? (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setManageOpen(false);
+                  setSmsOpen(true);
+                }}
+                className="h-10 w-full rounded-xl text-muted-foreground"
+              >
+                <MessageSquare className="size-4" aria-hidden />
+                Send SMS to drivers
+              </Button>
+            ) : null}
             <Button
               variant="ghost"
               onClick={() => setDeleteEventOpen(true)}
@@ -404,6 +419,15 @@ function EventPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {isCreator ? (
+        <DriverSmsDialog
+          open={smsOpen}
+          onOpenChange={setSmsOpen}
+          code={event.share_code}
+          eventName={event.name}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={deleteEventOpen}

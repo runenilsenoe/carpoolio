@@ -164,6 +164,15 @@ export const updateEvent = (code: string, event: EventInput) =>
 export const deleteEvent = (code: string) =>
   request(`/events/${encodeURIComponent(code)}`, { method: "DELETE" });
 
+export type DriverContact = { name: string; phone: string };
+export const getDriverContacts = (code: string) =>
+  request<DriverContact[]>(
+    `/events/${encodeURIComponent(code)}/driver-contacts`,
+    {
+      cache: "no-store",
+    },
+  );
+
 function carToApi(car: CarInput) {
   return {
     availableSeats: car.available_seats,

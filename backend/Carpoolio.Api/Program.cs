@@ -105,6 +105,29 @@ eventsApi.MapGet("/{code}", async (string code, HttpContext context, NpgsqlDataS
     return page is null ? Results.NotFound() : Results.Ok(page);
 });
 
+eventsApi.MapGet("/{code}/driver-contacts", async (string code, HttpContext context, NpgsqlDataSource db, PhoneProtector phones) =>
+{
+    context.Response.Headers.CacheControl = "no-store";
+    var user = await CurrentUser(context, db);
+    if (user is null) return Unauthorized();
+    await using var connection = await db.OpenConnectionAsync();
+    var owner = await QueryOne<EventOwner>(connection, "SELECT id, created_by_user_id FROM events WHERE share_code = @code", ("code", code.ToUpperInvariant()));
+    if (owner is null) return Results.NotFound();
+    if (owner.CreatorUserId != user.Id) return Results.StatusCode(403);
+    await using var command = new NpgsqlCommand("""
+        SELECT DISTINCT u.id, u.username, u.phone_encrypted
+        FROM cars c JOIN users u ON u.id = c.driver_user_id
+        WHERE c.event_id = @eventId
+        ORDER BY u.username, u.id
+        """, connection);
+    command.Parameters.AddWithValue("eventId", owner.Id);
+    await using var reader = await command.ExecuteReaderAsync();
+    var contacts = new List<DriverContactDto>();
+    while (await reader.ReadAsync())
+        contacts.Add(new DriverContactDto(reader.GetString(1), phones.Decrypt(reader.GetString(2))));
+    return Results.Ok(contacts);
+});
+
 eventsApi.MapPost("/{code}/cars", async (string code, CarInput input, HttpContext context, NpgsqlDataSource db) =>
 {
     var validation = CarpoolRules.Validate(input);

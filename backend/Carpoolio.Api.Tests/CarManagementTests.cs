@@ -17,6 +17,43 @@ namespace Carpoolio.Api.Tests;
 public class CarManagementTests(ApiFixture fixture)
 {
     [Fact]
+    public async Task Only_organiser_can_read_distinct_driver_contacts_and_public_page_never_includes_phones()
+    {
+        using var organiser = Client();
+        var code = await CreateEvent(organiser, "Organiser");
+        var path = $"/api/events/{code}/driver-contacts";
+        Assert.Empty((await organiser.GetFromJsonAsync<List<DriverContactDto>>(path))!);
+        (await AddCar(organiser, code, "Oslo")).EnsureSuccessStatusCode();
+        (await AddCar(organiser, code, "Drammen")).EnsureSuccessStatusCode();
+
+        using var driver = Client();
+        (await driver.PostAsJsonAsync("/api/identity", new IdentityInput("Driver", "+12025550198"))).EnsureSuccessStatusCode();
+        (await AddCar(driver, code, "Asker")).EnsureSuccessStatusCode();
+        var car = (await Page(organiser, code)).cars[0];
+        (await AddPassenger(organiser, car.id, "Passenger", null)).EnsureSuccessStatusCode();
+
+        using var anonymous = Client();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync(path)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await driver.GetAsync(path)).StatusCode);
+        var response = await organiser.GetAsync(path);
+        Assert.True(response.Headers.CacheControl!.NoStore);
+        var contacts = (await response.Content.ReadFromJsonAsync<List<DriverContactDto>>())!;
+        Assert.Equal(2, contacts.Count);
+        Assert.Contains(contacts, c => c.Name == "Driver" && c.Phone == "+12025550198");
+        Assert.Contains(contacts, c => c.Name == "Organiser" && c.Phone == "+4790000000");
+        Assert.DoesNotContain(contacts, c => c.Name == "Passenger");
+        var publicPage = await anonymous.GetStringAsync($"/api/events/{code}");
+        Assert.DoesNotContain("phone", publicPage, System.StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("12025550198", publicPage);
+
+        using var otherOrganiser = Client();
+        var otherCode = await CreateEvent(otherOrganiser, "Other organiser");
+        Assert.Equal(HttpStatusCode.Forbidden, (await otherOrganiser.GetAsync(path)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await organiser.GetAsync($"/api/events/{otherCode}/driver-contacts")).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await organiser.GetAsync("/api/events/UNKNOWN/driver-contacts")).StatusCode);
+    }
+
+    [Fact]
     public async Task Organiser_can_add_several_cars_while_guests_are_limited_to_one()
     {
         var organiser = Client();

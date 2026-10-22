@@ -80,7 +80,8 @@ export function CarFormDialog({
           <DialogDescription>
             Driving as{" "}
             <span className="font-medium text-foreground">{driverName}</span>.
-            Seats below are for passengers — you're not counted.
+            Seats below are for passengers — you're not counted. The organiser
+            can contact you by SMS using your saved number.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
