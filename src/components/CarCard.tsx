@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/Preferences";
 import { useState } from "react";
 import { Car, Clock, MoreHorizontal, Users } from "lucide-react";
 import type { CarView } from "@/lib/carpool-types";
@@ -10,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatTime, seatsLabel } from "@/lib/format";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-
 type Props = {
   car: CarView;
   meId: string | null;
@@ -24,7 +24,6 @@ type Props = {
   onDelete: (car: CarView) => void;
   onRemovePassenger: (memberId: string, name: string) => void;
 };
-
 export function CarCard({
   car,
   meId,
@@ -38,20 +37,19 @@ export function CarCard({
   onDelete,
   onRemovePassenger,
 }: Props) {
+  const { t, language } = usePreferences();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<{
     id: string;
     name: string;
   } | null>(null);
-
   const isDriver = !!meId && meId === car.driverUserId;
   const isPassenger = !!meId && car.passengers.some((p) => p.userId === meId);
   const taken = car.passengers.length;
   const full = taken >= car.availableSeats;
   const canManage = isDriver || isEventCreator;
   const departure = formatTime(car.departureTime);
-
   return (
     <article className="rounded-3xl border border-border bg-card p-5 shadow-soft">
       <div className="flex items-start justify-between gap-3">
@@ -66,7 +64,8 @@ export function CarCard({
             {departure ? (
               <span className="inline-flex items-center gap-1.5">
                 <Clock className="size-4" aria-hidden />
-                Leaving {departure}
+                {t("Leaving")}
+                {departure}
               </span>
             ) : null}
           </p>
@@ -78,7 +77,7 @@ export function CarCard({
                 variant="ghost"
                 size="icon"
                 className="size-9 shrink-0 rounded-full"
-                aria-label={`Manage ${car.driverName}'s car`}
+                aria-label={t("Manage {0}'s car", [car.driverName])}
               >
                 <MoreHorizontal className="size-5" />
               </Button>
@@ -88,18 +87,18 @@ export function CarCard({
                 disabled={full}
                 onSelect={() => onAddPassenger(car)}
               >
-                Add passenger
+                {t("Add passenger")}
               </DropdownMenuItem>
               {isDriver ? (
                 <DropdownMenuItem onSelect={() => onEdit(car)}>
-                  Edit car
+                  {t("Edit car")}
                 </DropdownMenuItem>
               ) : null}
               <DropdownMenuItem
                 onSelect={() => setConfirmDelete(true)}
                 className="text-destructive focus:text-destructive"
               >
-                {isDriver ? "Delete my car" : "Remove this car"}
+                {isDriver ? t("Delete my car") : t("Remove this car")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -115,7 +114,7 @@ export function CarCard({
       <div className="mt-4 flex items-center gap-2 text-sm font-medium">
         <Users className="size-4 text-muted-foreground" aria-hidden />
         <span className={full ? "text-muted-foreground" : ""}>
-          {seatsLabel(taken, car.availableSeats)}
+          {seatsLabel(taken, car.availableSeats, language)}
         </span>
       </div>
 
@@ -128,7 +127,7 @@ export function CarCard({
             >
               {p.username}
               {p.userId === meId ? (
-                <span className="text-muted-foreground">(you)</span>
+                <span className="text-muted-foreground">{t("(you)")}</span>
               ) : null}
               {p.note ? (
                 <span className="text-muted-foreground">· {p.note}</span>
@@ -140,7 +139,7 @@ export function CarCard({
                     setRemoveTarget({ id: p.id, name: p.username })
                   }
                   className="ml-0.5 rounded-full px-1 text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label={`Remove ${p.username}`}
+                  aria-label={t("Remove {0}", [p.username])}
                 >
                   ×
                 </button>
@@ -153,12 +152,12 @@ export function CarCard({
       <div className="mt-5">
         {isDriver ? (
           <p className="text-sm font-medium text-primary">
-            You're driving this car
+            {t("You're driving this car")}
           </p>
         ) : isPassenger ? (
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-primary">
-              You're riding with {car.driverName}
+              {t("You're riding with {0}", [car.driverName])}
             </p>
             <Button
               variant="ghost"
@@ -166,7 +165,7 @@ export function CarCard({
               onClick={() => setConfirmLeave(true)}
               className="h-10 rounded-xl"
             >
-              Leave car
+              {t("Leave car")}
             </Button>
           </div>
         ) : (
@@ -175,7 +174,7 @@ export function CarCard({
             disabled={full || busy}
             onClick={() => onJoin(car)}
           >
-            {full ? "Car is full" : "Join this car"}
+            {full ? t("Car is full") : t("Join this car")}
           </Button>
         )}
       </div>
@@ -184,26 +183,30 @@ export function CarCard({
         open={confirmDelete}
         onOpenChange={setConfirmDelete}
         title={
-          isDriver ? "Delete your car?" : `Remove ${car.driverName}'s car?`
+          isDriver
+            ? t("Delete your car?")
+            : t("Remove {0}'s car?", [car.driverName])
         }
-        description="Everyone riding along will lose their seat. This can't be undone."
-        confirmLabel="Delete car"
+        description={t(
+          "Everyone riding along will lose their seat. This can't be undone.",
+        )}
+        confirmLabel={t("Delete car")}
         onConfirm={() => onDelete(car)}
       />
       <ConfirmDialog
         open={confirmLeave}
         onOpenChange={setConfirmLeave}
-        title={`Leave ${car.driverName}'s car?`}
-        description="Your seat will be freed up for someone else."
-        confirmLabel="Leave car"
+        title={t("Leave {0}'s car?", [car.driverName])}
+        description={t("Your seat will be freed up for someone else.")}
+        confirmLabel={t("Leave car")}
         onConfirm={() => onLeave(car)}
       />
       <ConfirmDialog
         open={!!removeTarget}
         onOpenChange={(o) => !o && setRemoveTarget(null)}
-        title={`Remove ${removeTarget?.name ?? ""}?`}
-        description="They'll lose their seat in this car."
-        confirmLabel="Remove"
+        title={t("Remove {0}?", [removeTarget?.name ?? ""])}
+        description={t("They'll lose their seat in this car.")}
+        confirmLabel={t("Remove")}
         onConfirm={() => {
           if (removeTarget)
             onRemovePassenger(removeTarget.id, removeTarget.name);

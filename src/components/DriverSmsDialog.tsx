@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/Preferences";
 import { useEffect, useState } from "react";
 import { Copy, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
@@ -15,32 +16,34 @@ import { getDriverContacts, type DriverContact } from "@/lib/api";
 import { errorMessage } from "@/lib/error-message";
 import { formatPhone } from "@/lib/phone";
 import { smsLink, smsRecipients } from "@/lib/sms";
-
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   code: string;
   eventName: string;
 };
-
 export function DriverSmsDialog({
   open,
   onOpenChange,
   code,
   eventName,
 }: Props) {
+  const { t } = usePreferences();
   const [contacts, setContacts] = useState<DriverContact[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [isApple, setIsApple] = useState(false);
-
   useEffect(() => {
     if (!open) return;
     let active = true;
     setContacts(null);
     setError(null);
     setMessage(
-      `Hi drivers! Regarding ${eventName}:\n${window.location.origin}/e/${code}`,
+      t("Hi drivers! Regarding {0}:\n{1}/e/{2}", [
+        eventName,
+        window.location.origin,
+        code,
+      ]),
     );
     setIsApple(/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent));
     getDriverContacts(code).then(
@@ -48,51 +51,52 @@ export function DriverSmsDialog({
         if (active) setContacts(result);
       },
       (err: unknown) => {
-        if (active) setError(errorMessage(err));
+        if (active) setError(t(errorMessage(err)));
       },
     );
     return () => {
       active = false;
     };
-  }, [open, code, eventName]);
-
+  }, [open, code, eventName, t]);
   const phones = smsRecipients(contacts?.map((contact) => contact.phone) ?? []);
   async function copy(value: string) {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success("Copied");
+      toast.success(t("Copied"));
     } catch {
-      toast.error("Couldn't copy. You can select the text manually instead.");
+      toast.error(
+        t("Couldn't copy. You can select the text manually instead."),
+      );
     }
   }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            SMS to drivers
+            {t("SMS to drivers")}
           </DialogTitle>
           <DialogDescription>
-            Opens your messaging app. Review the recipients and send it
-            yourself. In a group message, drivers may see each other's numbers.
+            {t(
+              "Opens your messaging app. Review the recipients and send it yourself. In a group message, drivers may see each other's numbers.",
+            )}
           </DialogDescription>
         </DialogHeader>
         {error ? (
           <p role="alert" className="text-sm text-destructive">
-            {error}
+            {t(error)}
           </p>
         ) : contacts === null ? (
           <p role="status" className="text-sm text-muted-foreground">
-            Loading drivers…
+            {t("Loading drivers\u2026")}
           </p>
         ) : phones.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No drivers yet. Add a car first.
+            {t("No drivers yet. Add a car first.")}
           </p>
         ) : (
           <div className="space-y-4">
-            <ul aria-label="Recipients" className="space-y-2 text-sm">
+            <ul aria-label={t("Recipients")} className="space-y-2 text-sm">
               {contacts.map((contact, index) => (
                 <li
                   key={index}
@@ -106,7 +110,7 @@ export function DriverSmsDialog({
               ))}
             </ul>
             <div className="space-y-2">
-              <Label htmlFor="driver-sms-message">Message</Label>
+              <Label htmlFor="driver-sms-message">{t("Message")}</Label>
               <Textarea
                 id="driver-sms-message"
                 value={message}
@@ -118,13 +122,13 @@ export function DriverSmsDialog({
             <Button asChild className="h-12 w-full rounded-xl">
               <a href={smsLink(phones, message, isApple)}>
                 <MessageSquare className="size-4" aria-hidden />
-                Open messaging app
+                {t("Open messaging app")}
               </a>
             </Button>
             <p className="text-xs text-muted-foreground">
-              Works with iPhone and Android messaging apps. If recipients or
-              text don't transfer, copy them below. Your normal mobile charges
-              may apply.
+              {t(
+                "Works with iPhone and Android messaging apps. If recipients or text don't transfer, copy them below. Your normal mobile charges may apply.",
+              )}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -132,10 +136,12 @@ export function DriverSmsDialog({
                 size="sm"
                 onClick={() => copy(phones.join("; "))}
               >
-                <Copy className="size-3.5" aria-hidden /> Copy numbers
+                <Copy className="size-3.5" aria-hidden />
+                {t("Copy numbers")}
               </Button>
               <Button variant="ghost" size="sm" onClick={() => copy(message)}>
-                <Copy className="size-3.5" aria-hidden /> Copy message
+                <Copy className="size-3.5" aria-hidden />
+                {t("Copy message")}
               </Button>
             </div>
           </div>

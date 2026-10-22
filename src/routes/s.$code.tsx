@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/Preferences";
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { Check, Copy, Share2 } from "lucide-react";
@@ -5,7 +6,6 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getEventPage } from "@/lib/api";
-
 export const Route = createFileRoute("/s/$code")({
   loader: async ({ params }) => {
     const data = await getEventPage(params.code);
@@ -34,13 +34,12 @@ export const Route = createFileRoute("/s/$code")({
   },
   component: SharePage,
 });
-
 function SharePage() {
+  const { t } = usePreferences();
   const { event } = Route.useLoaderData();
   const [url, setUrl] = useState("");
   const [qr, setQr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-
   useEffect(() => {
     const shareUrl = `${window.location.origin}/e/${event.share_code}`;
     setUrl(shareUrl);
@@ -52,24 +51,22 @@ function SharePage() {
       .then(setQr)
       .catch(() => setQr(null));
   }, [event.share_code]);
-
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
-      toast.success("Link copied");
+      toast.success(t("Link copied"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("Couldn't copy — long-press the link instead.");
+      toast.error(t("Couldn't copy \u2014 long-press the link instead."));
     }
   }
-
   async function share() {
     if (navigator.share) {
       try {
         await navigator.share({
           title: event.name,
-          text: `Carpool to ${event.name}`,
+          text: t("Carpool to {0}", [event.name]),
           url,
         });
       } catch {
@@ -79,14 +76,13 @@ function SharePage() {
       await copy();
     }
   }
-
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-6 pt-10 pb-12">
+    <main className="mx-auto min-h-[calc(100dvh-4rem)] max-w-md px-6 pt-10 pb-12">
       <h1 className="font-display text-4xl text-balance">
-        Your carpool is ready 🚗
+        {t("Your carpool is ready \uD83D\uDE97")}
       </h1>
       <p className="mt-2 text-muted-foreground">
-        Share this with everyone who's coming.
+        {t("Share this with everyone who's coming.")}
       </p>
 
       <p className="mt-6 text-lg font-semibold">{event.name}</p>
@@ -96,7 +92,7 @@ function SharePage() {
           {qr ? (
             <img
               src={qr}
-              alt={`QR code linking to the ${event.name} carpool`}
+              alt={t("QR code linking to the {0} carpool", [event.name])}
               className="size-full"
             />
           ) : (
@@ -120,7 +116,7 @@ function SharePage() {
             ) : (
               <Copy className="size-5" aria-hidden />
             )}
-            {copied ? "Copied" : "Copy link"}
+            {copied ? t("Copied") : t("Copy link")}
           </Button>
           <Button
             variant="outline"
@@ -128,7 +124,7 @@ function SharePage() {
             className="h-13 rounded-2xl py-3.5 text-base"
           >
             <Share2 className="size-5" aria-hidden />
-            Share
+            {t("Share")}
           </Button>
         </div>
         <Button
@@ -136,7 +132,7 @@ function SharePage() {
           className="h-14 w-full rounded-2xl text-base shadow-soft"
         >
           <Link to="/e/$code" params={{ code: event.share_code }}>
-            Open event
+            {t("Open event")}
           </Link>
         </Button>
       </div>

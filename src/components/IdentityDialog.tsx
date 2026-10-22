@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/Preferences";
 import { useEffect, useState } from "react";
 import { createIdentity } from "@/lib/api";
 import { nameSchema, phoneSchema } from "@/lib/schemas";
@@ -14,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/error-message";
-
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,16 +29,18 @@ type Props = {
   submitLabel?: string;
   showNote?: boolean;
 };
-
 function firstIssue(result: {
   success: boolean;
-  error?: { issues: { message: string }[] };
+  error?: {
+    issues: {
+      message: string;
+    }[];
+  };
 }) {
   return result.success
     ? null
     : (result.error?.issues[0]?.message ?? "Please check this field.");
 }
-
 export function IdentityDialog({
   open,
   onOpenChange,
@@ -49,27 +51,25 @@ export function IdentityDialog({
   submitLabel,
   showNote = false,
 }: Props) {
+  const { t } = usePreferences();
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
   const [touched, setTouched] = useState({ username: false, phone: false });
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-
   useEffect(() => {
     if (!open) return;
     setTouched({ username: false, phone: false });
     setFormError(null);
     setNote("");
   }, [open]);
-
   const nameResult = nameSchema.safeParse(username);
   const phoneResult = phoneSchema.safeParse(phone);
   const nameError = touched.username ? firstIssue(nameResult) : null;
   const phoneError = touched.phone ? firstIssue(phoneResult) : null;
   const normalized = normalizePhoneOrNull(phone);
   const isValid = nameResult.success && phoneResult.success;
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (pending) return;
@@ -91,27 +91,28 @@ export function IdentityDialog({
       await onIdentified();
       onOpenChange(false);
     } catch (err) {
-      setFormError(errorMessage(err));
+      setFormError(t(errorMessage(err)));
     } finally {
       setPending(false);
     }
   }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="rounded-3xl sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
-            {title ?? "Who are you?"}
+            {title ?? t("Who are you?")}
           </DialogTitle>
           <DialogDescription>
             {description ??
-              "Just a name and a phone number — no account needed. If you drive, the organiser can use your number to contact you. It isn't shown to other participants."}
+              t(
+                "Just a name and a phone number \u2014 no account needed. If you drive, the organiser can use your number to contact you. It isn't shown to other participants.",
+              )}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="identity-username">Name</Label>
+            <Label htmlFor="identity-username">{t("Name")}</Label>
             <Input
               id="identity-username"
               value={username}
@@ -132,12 +133,12 @@ export function IdentityDialog({
                 role="alert"
                 className="text-sm text-destructive"
               >
-                {nameError}
+                {t(nameError)}
               </p>
             ) : null}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="identity-phone">Phone number</Label>
+            <Label htmlFor="identity-phone">{t("Phone number")}</Label>
             <Input
               id="identity-phone"
               value={phone}
@@ -156,23 +157,23 @@ export function IdentityDialog({
               role={phoneError ? "alert" : undefined}
               className={`text-sm ${phoneError ? "text-destructive" : "text-muted-foreground"}`}
             >
-              {phoneError ??
+              {(phoneError ? t(phoneError) : null) ??
                 (normalized
-                  ? `Saved as ${formatPhone(normalized)}`
-                  : "8 digits is enough — we'll add +47 for you.")}
+                  ? t("Saved as {0}", [formatPhone(normalized)])
+                  : t("8 digits is enough \u2014 we'll add +47 for you."))}
             </p>
           </div>
           {showNote ? (
             <div className="space-y-2">
               <Label htmlFor="identity-note">
-                Passenger note{" "}
-                <span className="text-muted-foreground">(optional)</span>
+                {t("Passenger note")}{" "}
+                <span className="text-muted-foreground">{t("(optional)")}</span>
               </Label>
               <Textarea
                 id="identity-note"
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
-                placeholder="Needs a child seat"
+                placeholder={t("Needs a child seat")}
                 maxLength={200}
                 rows={2}
                 className="rounded-xl"
@@ -181,7 +182,7 @@ export function IdentityDialog({
           ) : null}
           {formError ? (
             <p role="alert" className="text-sm text-destructive">
-              {formError}
+              {t(formError)}
             </p>
           ) : null}
           <Button
@@ -189,7 +190,7 @@ export function IdentityDialog({
             disabled={pending || !isValid}
             className="h-12 w-full rounded-xl text-base"
           >
-            {pending ? "Saving…" : (submitLabel ?? "Continue")}
+            {pending ? t("Saving\u2026") : (submitLabel ?? t("Continue"))}
           </Button>
         </form>
       </DialogContent>

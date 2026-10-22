@@ -1,0 +1,206 @@
+export type Language = "en" | "nb";
+export const norwegian: Record<string, string> = {
+  "Name must be between 2 and 40 characters.":
+    "Navnet må være mellom 2 og 40 tegn.",
+  "Please enter a valid phone number.": "Skriv inn et gyldig telefonnummer.",
+  "Keep the note under 200 characters.": "Hold merknaden under 200 tegn.",
+  "Please give the carpool a name.": "Gi samkjøringen et navn.",
+  "Please pick a date.": "Velg en dato.",
+  "Please pick a valid time.": "Velg et gyldig klokkeslett.",
+  "Destination is too long.": "Destinasjonen er for lang.",
+  "At least 1 seat is required.": "Minst 1 sete er nødvendig.",
+  "Note is too long.": "Merknaden er for lang.",
+  "This carpool no longer exists.": "Denne samkjøringen finnes ikke lenger.",
+  "You already added a car to this carpool.":
+    "Du har allerede lagt til en bil i denne samkjøringen.",
+  "This car no longer exists.": "Denne bilen finnes ikke lenger.",
+  "You're the driver of this car.": "Du er sjåfør i denne bilen.",
+  "Sorry — that was the last seat and it just went.":
+    "Beklager — det siste setet ble nettopp tatt.",
+  "This car is already full.": "Denne bilen er allerede full.",
+  "That passenger is already gone.": "Denne passasjeren er allerede fjernet.",
+  "We need your name and phone number first.":
+    "Vi trenger navnet og telefonnummeret ditt først.",
+  "You're not allowed to do that.": "Du har ikke tilgang til å gjøre dette.",
+  "Cross-site requests are not allowed.":
+    "Forespørsler fra andre nettsteder er ikke tillatt.",
+
+  "Going somewhere together?": "Skal dere samme vei?",
+  "Create a carpool, share the link, and let everyone find a seat.":
+    "Opprett en samkjøring, del lenken og la alle finne et sete.",
+  "Create a carpool": "Opprett samkjøring",
+  "Create carpool": "Opprett samkjøring",
+  "No account, no password. Takes 20 seconds.":
+    "Ingen konto, ingen passord. Tar 20 sekunder.",
+  "A little example": "Et lite eksempel",
+  "Alex is driving": "Alex kjører",
+  "City centre → Summer party": "Sentrum → Sommerfest",
+  "1 seat free": "1 ledig sete",
+  Back: "Tilbake",
+  "Add the basics — you can change them later.":
+    "Fyll inn det viktigste — du kan endre det senere.",
+  "Event name": "Navn på arrangement",
+  "Summer party": "Sommerfest",
+  Date: "Dato",
+  Time: "Tid",
+  Destination: "Destinasjon",
+  "(optional)": "(valgfritt)",
+  "Creating…": "Oppretter…",
+  "Almost there": "Snart i mål",
+  "Who are you?": "Hvem er du?",
+  "Just a name and a phone number — no account needed. If you drive, the organiser can use your number to contact you. It isn't shown to other participants.":
+    "Kun navn og telefonnummer — ingen konto nødvendig. Hvis du kjører, kan arrangøren bruke nummeret for å kontakte deg. Det vises ikke til andre deltakere.",
+  Name: "Navn",
+  "Phone number": "Telefonnummer",
+  "8 digits is enough — we'll add +47 for you.":
+    "8 sifre er nok — vi legger til +47 for deg.",
+  "Saved as {0}": "Lagres som {0}",
+  "Saving…": "Lagrer…",
+  Continue: "Fortsett",
+  "Passenger note": "Merknad om passasjer",
+  "Needs a child seat": "Trenger barnesete",
+  "Please enter at least 2 characters": "Skriv inn minst 2 tegn",
+  "That name is a bit too long": "Navnet er litt for langt",
+  "Use letters only — no numbers or symbols":
+    "Bruk bare bokstaver — ingen tall eller symboler",
+  "Please enter your phone number": "Skriv inn telefonnummeret ditt",
+  "That number is too long": "Nummeret er for langt",
+  "Enter an 8-digit Norwegian number, or include a country code":
+    "Skriv inn et norsk nummer med 8 sifre, eller ta med landskode",
+  "Keep the note under 200 characters": "Hold merknaden under 200 tegn",
+  "Please give the carpool a name": "Gi samkjøringen et navn",
+  "Please pick a date": "Velg en dato",
+  "At least 1 seat": "Minst 1 sete",
+  "Where do you start from?": "Hvor starter du fra?",
+  "Please check the details.": "Kontroller opplysningene.",
+  "Please check this field.": "Kontroller dette feltet.",
+  "Something went wrong. Please try again.": "Noe gikk galt. Prøv igjen.",
+  "Something went wrong.": "Noe gikk galt.",
+  "Carpool not found": "Fant ikke samkjøringen",
+  "This link may have expired or the carpool was deleted.":
+    "Lenken kan ha utløpt, eller samkjøringen er slettet.",
+  "Go to Carpoolio": "Gå til Carpoolio",
+  Cars: "Biler",
+  "No cars yet": "Ingen biler ennå",
+  "Be the first to drive!": "Bli den første som kjører!",
+  "Add a car": "Legg til bil",
+  "Add your car": "Legg til bilen din",
+  "Add car": "Legg til bil",
+  "Edit your car": "Endre bilen din",
+  "Save changes": "Lagre endringer",
+  "Car updated": "Bilen er oppdatert",
+  "Your car is on the list": "Bilen din er lagt til",
+  "Driving as": "Du kjører som",
+  ". Seats below are for passengers — you're not counted. The organiser can contact you by SMS using your saved number.":
+    ". Setene nedenfor er til passasjerer — du telles ikke med. Arrangøren kan kontakte deg på SMS via det lagrede nummeret ditt.",
+  "Passenger seats": "Passasjerseter",
+  "Starting point": "Avreisested",
+  Departure: "Avreise",
+  Note: "Merknad",
+  "Can pick people up near Oslo S.": "Kan hente folk ved Oslo S.",
+  "Manage this carpool": "Administrer samkjøringen",
+  "Share this carpool": "Del samkjøringen",
+  "Manage carpool": "Administrer samkjøring",
+  "Only you, as the organiser, can see this.":
+    "Bare du som arrangør kan se dette.",
+  "Carpool updated": "Samkjøringen er oppdatert",
+  "Delete carpool": "Slett samkjøring",
+  "Delete this carpool?": "Slette denne samkjøringen?",
+  "All cars and passengers will be removed and the link will stop working.":
+    "Alle biler og passasjerer fjernes, og lenken slutter å virke.",
+  "Carpool deleted": "Samkjøringen er slettet",
+  Cancel: "Avbryt",
+  "Manage {0}'s car": "Administrer bilen til {0}",
+  "Add passenger": "Legg til passasjer",
+  "Edit car": "Endre bil",
+  "Delete my car": "Slett bilen min",
+  "Remove this car": "Fjern denne bilen",
+  Leaving: "Avreise",
+  "(you)": "(deg)",
+  "Remove {0}": "Fjern {0}",
+  "You're driving this car": "Du kjører denne bilen",
+  "You're riding with": "Du sitter på med",
+  "You're riding with {0}": "Du sitter på med {0}",
+  "Car is full": "Bilen er full",
+  "Join this car": "Bli med i bilen",
+  "Join car": "Bli med",
+  "Join {0}'s car?": "Bli med i bilen til {0}?",
+  "'s car?": " sin bil?",
+  "Joining…": "Blir med…",
+  "1 seat will be reserved for you.": "1 sete reserveres til deg.",
+  "Leave car": "Forlat bilen",
+  "You left the car": "Du har forlatt bilen",
+  "Car removed": "Bilen er fjernet",
+  "Delete your car?": "Slette bilen din?",
+  "Remove {0}'s car?": "Fjerne bilen til {0}?",
+  "Everyone riding along will lose their seat. This can't be undone.":
+    "Alle passasjerene mister setet sitt. Dette kan ikke angres.",
+  "Delete car": "Slett bil",
+  "Leave {0}'s car?": "Forlate bilen til {0}?",
+  "Your seat will be freed up for someone else.":
+    "Setet ditt blir ledig for andre.",
+  "Remove {0}?": "Fjerne {0}?",
+  "They'll lose their seat in this car.":
+    "Passasjeren mister setet sitt i denne bilen.",
+  Remove: "Fjern",
+  "{0} was added": "{0} er lagt til",
+  "{0} was removed": "{0} er fjernet",
+  "this car": "denne bilen",
+  you: "deg",
+  "Add someone to {0}'s passenger list. Their phone number remains private.":
+    "Legg til noen på passasjerlisten til {0}. Telefonnummeret deres forblir privat.",
+  "Your carpool is ready 🚗": "Samkjøringen er klar 🚗",
+  "Share this with everyone who's coming.":
+    "Del denne med alle som skal være med.",
+  "Copy link": "Kopier lenke",
+  Copied: "Kopiert",
+  Share: "Del",
+  "Open event": "Åpne samkjøring",
+  "Carpool to {0}": "Samkjøring til {0}",
+  "QR code linking to the {0} carpool": "QR-kode til samkjøringen {0}",
+  "Link copied": "Lenken er kopiert",
+  "Couldn't copy — long-press the link instead.":
+    "Kunne ikke kopiere — hold inne lenken i stedet.",
+  "Couldn't copy the link.": "Kunne ikke kopiere lenken.",
+  "Send SMS to drivers": "Send SMS til sjåførene",
+  "SMS to drivers": "SMS til sjåførene",
+  "Opens your messaging app. Review the recipients and send it yourself. In a group message, drivers may see each other's numbers.":
+    "Åpner meldingsappen din. Kontroller mottakerne og send selv. I en gruppemelding kan sjåførene se hverandres numre.",
+  "Loading drivers…": "Henter sjåfører…",
+  "No drivers yet. Add a car first.":
+    "Ingen sjåfører ennå. Legg til en bil først.",
+  Recipients: "Mottakere",
+  Message: "Melding",
+  "Open messaging app": "Åpne meldingsappen",
+  "Works with iPhone and Android messaging apps. If recipients or text don't transfer, copy them below. Your normal mobile charges may apply.":
+    "For meldingsapper på iPhone og Android. Hvis mottakere eller tekst ikke følger med, kan du kopiere dem nedenfor. Vanlige mobilpriser kan gjelde.",
+  "Copy numbers": "Kopier numre",
+  "Copy message": "Kopier melding",
+  "Couldn't copy. You can select the text manually instead.":
+    "Kunne ikke kopiere. Du kan markere teksten manuelt i stedet.",
+  "Hi drivers! Regarding {0}:\n{1}/e/{2}":
+    "Hei sjåfører! Angående {0}:\n{1}/e/{2}",
+  "Page not found": "Fant ikke siden",
+  "The page you're looking for doesn't exist or has been moved.":
+    "Siden du leter etter finnes ikke eller har blitt flyttet.",
+  "Go home": "Til forsiden",
+  "This page didn't load": "Siden kunne ikke lastes",
+  "Something went wrong on our end. You can try refreshing or head back home.":
+    "Noe gikk galt hos oss. Prøv å laste siden på nytt, eller gå til forsiden.",
+  "Try again": "Prøv igjen",
+  Close: "Lukk",
+  "Light mode": "Lys modus",
+  "Dark mode": "Mørk modus",
+  "Appearance and language": "Utseende og språk",
+};
+
+export function translate(
+  language: Language,
+  text: string,
+  values: unknown[] = [],
+): string {
+  const translated = language === "nb" ? (norwegian[text] ?? text) : text;
+  return translated.replace(/\{(\d+)\}/g, (match, index: string) =>
+    String(values[Number(index)] ?? match),
+  );
+}

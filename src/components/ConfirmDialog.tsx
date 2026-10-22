@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/Preferences";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,7 +9,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -17,7 +17,6 @@ type Props = {
   confirmLabel: string;
   onConfirm: () => void;
 };
-
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -26,6 +25,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
 }: Props) {
+  const { t } = usePreferences();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent className="rounded-3xl">
@@ -37,7 +37,7 @@ export function ConfirmDialog({
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel className="h-11 rounded-xl">
-            Cancel
+            {t("Cancel")}
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}

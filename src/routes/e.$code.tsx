@@ -1,3 +1,4 @@
+import { usePreferences } from "@/components/Preferences";
 import { useMemo, useState } from "react";
 import {
   createFileRoute,
@@ -42,7 +43,6 @@ import type { CarInput } from "@/lib/schemas";
 import { eventSchema } from "@/lib/schemas";
 import { formatEventDate, formatTime, seatsLabel } from "@/lib/format";
 import { errorMessage } from "@/lib/error-message";
-
 export const Route = createFileRoute("/e/$code")({
   loader: async ({ params }) => {
     const data = await getEventPage(params.code);
@@ -74,28 +74,26 @@ export const Route = createFileRoute("/e/$code")({
   notFoundComponent: EventNotFound,
   component: EventPage,
 });
-
 function EventNotFound() {
+  const { t } = usePreferences();
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-center px-6 text-center">
-      <h1 className="font-display text-4xl">Carpool not found</h1>
+    <main className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-md flex-col items-center justify-center px-6 text-center">
+      <h1 className="font-display text-4xl">{t("Carpool not found")}</h1>
       <p className="mt-3 text-muted-foreground">
-        This link may have expired or the carpool was deleted.
+        {t("This link may have expired or the carpool was deleted.")}
       </p>
       <Button asChild className="mt-8 h-12 rounded-2xl">
-        <Link to="/">Go to Carpoolio</Link>
+        <Link to="/">{t("Go to Carpoolio")}</Link>
       </Button>
     </main>
   );
 }
-
 type PendingAction = (() => Promise<void>) | null;
-
 function EventPage() {
+  const { t, language } = usePreferences();
   const data = Route.useLoaderData();
   const router = useRouter();
   const { event, cars, me, isCreator } = data;
-
   const [busy, setBusy] = useState(false);
   const [identityOpen, setIdentityOpen] = useState(false);
   const [afterIdentity, setAfterIdentity] = useState<PendingAction>(null);
@@ -113,7 +111,6 @@ function EventPage() {
     destination: event.destination ?? "",
   });
   const [eventError, setEventError] = useState<string | null>(null);
-
   // Stable identity: CarFormDialog resets its fields whenever this changes.
   const carFormInitial = useMemo(
     () =>
@@ -127,12 +124,10 @@ function EventPage() {
         : null,
     [editingCar],
   );
-
   const myCar = me ? cars.find((c) => c.driverUserId === me.id) : undefined;
   async function refresh() {
     await router.invalidate();
   }
-
   function withIdentity(action: () => Promise<void>) {
     if (!me) {
       setAfterIdentity(() => action);
@@ -141,7 +136,6 @@ function EventPage() {
     }
     void action();
   }
-
   async function guarded(fn: () => Promise<void>, success?: string) {
     if (busy) return;
     setBusy(true);
@@ -150,61 +144,55 @@ function EventPage() {
       await refresh();
       if (success) toast.success(success);
     } catch (err) {
-      toast.error(errorMessage(err));
+      toast.error(t(errorMessage(err)));
       await refresh();
     } finally {
       setBusy(false);
     }
   }
-
   function handleAddCarClick() {
     withIdentity(async () => {
       setEditingCar(null);
       setCarFormOpen(true);
     });
   }
-
   async function submitCar(values: CarInput) {
     if (editingCar) {
       await updateCar(editingCar.id, values);
-      toast.success("Car updated");
+      toast.success(t("Car updated"));
     } else {
       await addCar(event.share_code, values);
-      toast.success("Your car is on the list");
+      toast.success(t("Your car is on the list"));
     }
     await refresh();
   }
-
   function handleJoin(car: CarView) {
     withIdentity(async () => setJoinTarget(car));
   }
-
   async function confirmJoin() {
     const car = joinTarget;
     if (!car) return;
     setJoinTarget(null);
     await guarded(
       () => joinCar(car.id).then(() => undefined),
-      `You're riding with ${car.driverName}`,
+      t("You're riding with {0}", [car.driverName]),
     );
   }
-
   async function saveEvent() {
     const parsed = eventSchema.safeParse(eventForm);
     if (!parsed.success) {
       setEventError(
-        parsed.error.issues[0]?.message ?? "Please check the details.",
+        parsed.error.issues[0]?.message ?? t("Please check the details."),
       );
       return;
     }
     setEventError(null);
     await guarded(
       () => updateEvent(event.share_code, parsed.data).then(() => undefined),
-      "Carpool updated",
+      t("Carpool updated"),
     );
     setManageOpen(false);
   }
-
   async function shareEvent() {
     const url = `${window.location.origin}/e/${event.share_code}`;
     if (navigator.share) {
@@ -217,14 +205,13 @@ function EventPage() {
     }
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied");
+      toast.success(t("Link copied"));
     } catch {
-      toast.error("Couldn't copy the link.");
+      toast.error(t("Couldn't copy the link."));
     }
   }
-
   return (
-    <main className="mx-auto min-h-dvh max-w-md px-5 pt-8 pb-28">
+    <main className="mx-auto min-h-[calc(100dvh-4rem)] max-w-md px-5 pt-8 pb-28">
       <EventHeader
         event={event}
         isCreator={isCreator}
@@ -232,17 +219,19 @@ function EventPage() {
         onShare={shareEvent}
       />
 
-      <section aria-label="Cars" className="mt-8 space-y-4">
+      <section aria-label={t("Cars")} className="mt-8 space-y-4">
         {cars.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-12 text-center">
-            <p className="font-display text-2xl">No cars yet</p>
-            <p className="mt-2 text-muted-foreground">Be the first to drive!</p>
+            <p className="font-display text-2xl">{t("No cars yet")}</p>
+            <p className="mt-2 text-muted-foreground">
+              {t("Be the first to drive!")}
+            </p>
             <Button
               onClick={handleAddCarClick}
               className="mt-6 h-12 rounded-2xl px-6 text-base"
             >
               <Plus className="size-5" aria-hidden />
-              Add a car
+              {t("Add a car")}
             </Button>
           </div>
         ) : (
@@ -259,7 +248,7 @@ function EventPage() {
               onLeave={(c) =>
                 guarded(
                   () => leaveCar(c.id).then(() => undefined),
-                  "You left the car",
+                  t("You left the car"),
                 )
               }
               onEdit={(c) => {
@@ -269,13 +258,13 @@ function EventPage() {
               onDelete={(c) =>
                 guarded(
                   () => deleteCar(c.id).then(() => undefined),
-                  "Car removed",
+                  t("Car removed"),
                 )
               }
               onRemovePassenger={(memberId, name) =>
                 guarded(
                   () => removePassenger(memberId).then(() => undefined),
-                  `${name} was removed`,
+                  t("{0} was removed", [name]),
                 )
               }
             />
@@ -292,7 +281,7 @@ function EventPage() {
               className="h-13 w-full rounded-2xl bg-card py-3.5 text-base"
             >
               <Plus className="size-5" aria-hidden />
-              Add a car
+              {t("Add a car")}
             </Button>
           </div>
         </div>
@@ -317,15 +306,18 @@ function EventPage() {
         onOpenChange={(open) => {
           if (!open) setPassengerTarget(null);
         }}
-        title="Add passenger"
-        description={`Add someone to ${passengerTarget?.driverName ?? "this car"}'s passenger list. Their phone number remains private.`}
-        submitLabel="Add passenger"
+        title={t("Add passenger")}
+        description={t(
+          "Add someone to {0}'s passenger list. Their phone number remains private.",
+          [passengerTarget?.driverName ?? t("this car")],
+        )}
+        submitLabel={t("Add passenger")}
         showNote
         submitIdentity={async (identity) => {
           const car = passengerTarget;
           if (!car) return;
           await addPassenger(car.id, identity);
-          toast.success(`${identity.username} was added`);
+          toast.success(t("{0} was added", [identity.username]));
           await refresh();
         }}
         onIdentified={() => undefined}
@@ -334,9 +326,9 @@ function EventPage() {
       <CarFormDialog
         open={carFormOpen}
         onOpenChange={setCarFormOpen}
-        driverName={me?.username ?? "you"}
-        title={editingCar ? "Edit your car" : "Add your car"}
-        submitLabel={editingCar ? "Save changes" : "Add car"}
+        driverName={me?.username ?? t("you")}
+        title={editingCar ? t("Edit your car") : t("Add your car")}
+        submitLabel={editingCar ? t("Save changes") : t("Add car")}
         initial={carFormInitial}
         onSubmit={submitCar}
       />
@@ -348,17 +340,18 @@ function EventPage() {
         <DialogContent className="rounded-3xl sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
-              Join {joinTarget?.driverName}'s car?
+              {t("Join {0}'s car?", [joinTarget?.driverName ?? ""])}
             </DialogTitle>
             <DialogDescription>
               {joinTarget?.pickupLocation}
               {event.destination ? ` → ${event.destination}` : ""}
               {joinTarget?.departureTime
-                ? ` · Leaving ${formatTime(joinTarget.departureTime)}`
+                ? ` · ${t("Leaving")} ${formatTime(joinTarget.departureTime)}`
                 : ""}
-              <br />1 seat will be reserved for you.
+              <br />
+              {t("1 seat will be reserved for you.")}
               {joinTarget
-                ? ` (${seatsLabel(joinTarget.passengers.length, joinTarget.availableSeats)})`
+                ? ` (${seatsLabel(joinTarget.passengers.length, joinTarget.availableSeats, language)})`
                 : ""}
             </DialogDescription>
           </DialogHeader>
@@ -367,7 +360,7 @@ function EventPage() {
             disabled={busy}
             className="h-12 w-full rounded-xl text-base"
           >
-            {busy ? "Joining…" : "Join car"}
+            {busy ? t("Joining\u2026") : t("Join car")}
           </Button>
         </DialogContent>
       </Dialog>
@@ -376,17 +369,17 @@ function EventPage() {
         <DialogContent className="max-h-[92vh] overflow-y-auto rounded-3xl sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
-              Manage carpool
+              {t("Manage carpool")}
             </DialogTitle>
             <DialogDescription>
-              Only you, as the organiser, can see this.
+              {t("Only you, as the organiser, can see this.")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-5">
             <EventFormFields value={eventForm} onChange={setEventForm} />
             {eventError ? (
               <p role="alert" className="text-sm text-destructive">
-                {eventError}
+                {t(eventError)}
               </p>
             ) : null}
             <Button
@@ -394,7 +387,7 @@ function EventPage() {
               disabled={busy}
               className="h-12 w-full rounded-xl text-base"
             >
-              Save changes
+              {t("Save changes")}
             </Button>
             {isCreator ? (
               <Button
@@ -406,7 +399,7 @@ function EventPage() {
                 className="h-10 w-full rounded-xl text-muted-foreground"
               >
                 <MessageSquare className="size-4" aria-hidden />
-                Send SMS to drivers
+                {t("Send SMS to drivers")}
               </Button>
             ) : null}
             <Button
@@ -414,7 +407,7 @@ function EventPage() {
               onClick={() => setDeleteEventOpen(true)}
               className="h-11 w-full rounded-xl text-destructive hover:text-destructive"
             >
-              Delete carpool
+              {t("Delete carpool")}
             </Button>
           </div>
         </DialogContent>
@@ -432,17 +425,19 @@ function EventPage() {
       <ConfirmDialog
         open={deleteEventOpen}
         onOpenChange={setDeleteEventOpen}
-        title="Delete this carpool?"
-        description="All cars and passengers will be removed and the link will stop working."
-        confirmLabel="Delete carpool"
+        title={t("Delete this carpool?")}
+        description={t(
+          "All cars and passengers will be removed and the link will stop working.",
+        )}
+        confirmLabel={t("Delete carpool")}
         onConfirm={() => {
           void (async () => {
             try {
               await deleteEvent(event.share_code);
-              toast.success("Carpool deleted");
+              toast.success(t("Carpool deleted"));
               await router.navigate({ to: "/" });
             } catch (err) {
-              toast.error(errorMessage(err));
+              toast.error(t(errorMessage(err)));
             }
           })();
         }}

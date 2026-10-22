@@ -1,38 +1,36 @@
+import { usePreferences } from "@/components/Preferences";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 export type EventFormState = {
   name: string;
   date: string;
   time: string;
   destination: string;
 };
-
 type Props = {
   value: EventFormState;
   onChange: (next: EventFormState) => void;
 };
-
 export function EventFormFields({ value, onChange }: Props) {
+  const { t } = usePreferences();
   const set = (patch: Partial<EventFormState>) =>
     onChange({ ...value, ...patch });
-
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="event-name">Event name</Label>
+        <Label htmlFor="event-name">{t("Event name")}</Label>
         <Input
           id="event-name"
           value={value.name}
           onChange={(e) => set({ name: e.target.value })}
-          placeholder="Summer party"
+          placeholder={t("Summer party")}
           maxLength={80}
           className="h-12 rounded-xl"
         />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-3">
         <div className="min-w-0 space-y-2">
-          <Label htmlFor="event-date">Date</Label>
+          <Label htmlFor="event-date">{t("Date")}</Label>
           <Input
             id="event-date"
             type="date"
@@ -43,7 +41,8 @@ export function EventFormFields({ value, onChange }: Props) {
         </div>
         <div className="min-w-0 space-y-2">
           <Label htmlFor="event-time">
-            Time <span className="text-muted-foreground">(optional)</span>
+            {t("Time")}
+            <span className="text-muted-foreground">{t("(optional)")}</span>
           </Label>
           <Input
             id="event-time"
@@ -56,7 +55,8 @@ export function EventFormFields({ value, onChange }: Props) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="event-destination">
-          Destination <span className="text-muted-foreground">(optional)</span>
+          {t("Destination")}
+          <span className="text-muted-foreground">{t("(optional)")}</span>
         </Label>
         <Input
           id="event-destination"

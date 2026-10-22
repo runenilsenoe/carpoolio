@@ -1,7 +1,7 @@
+import { usePreferences } from "@/components/Preferences";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Car, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -24,34 +24,34 @@ export const Route = createFileRoute("/")({
   }),
   component: Index,
 });
-
 function Index() {
+  const { t } = usePreferences();
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col px-6 pt-8 pb-10">
+    <main className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-md flex-col px-6 pt-8 pb-10">
       <p className="text-lg font-semibold tracking-tight text-primary">
         Carpoolio
       </p>
 
       <div className="flex flex-1 flex-col justify-center py-16">
         <h1 className="font-display text-5xl leading-[1.05] text-balance">
-          Going somewhere together?
+          {t("Going somewhere together?")}
         </h1>
         <p className="mt-5 text-lg leading-relaxed text-muted-foreground text-pretty">
-          Create a carpool, share the link, and let everyone find a seat.
+          {t("Create a carpool, share the link, and let everyone find a seat.")}
         </p>
 
         <figure className="mt-8 rounded-3xl border border-border bg-card p-5 shadow-soft">
           <figcaption className="mb-4 text-xs font-medium tracking-wide text-muted-foreground">
-            A little example
+            {t("A little example")}
           </figcaption>
           <div className="flex items-center gap-3">
             <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Car className="size-6" aria-hidden />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold">Alex is driving</p>
+              <p className="text-sm font-semibold">{t("Alex is driving")}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                City centre → Summer party
+                {t("City centre \u2192 Summer party")}
               </p>
             </div>
           </div>
@@ -71,7 +71,8 @@ function Index() {
               </span>
             ))}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-primary/40 px-3 py-2 text-xs font-medium text-primary">
-              <Plus className="size-3.5" aria-hidden />1 seat free
+              <Plus className="size-3.5" aria-hidden />
+              {t("1 seat free")}
             </span>
           </div>
         </figure>
@@ -81,13 +82,13 @@ function Index() {
           className="mt-8 h-14 w-full rounded-2xl text-base shadow-soft"
         >
           <Link to="/new">
-            Create a carpool
+            {t("Create a carpool")}
             <ArrowRight className="size-5" aria-hidden />
           </Link>
         </Button>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          No account, no password. Takes 20 seconds.
+          {t("No account, no password. Takes 20 seconds.")}
         </p>
       </div>
     </main>
