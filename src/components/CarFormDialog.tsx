@@ -124,7 +124,7 @@ export function CarFormDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="car-note">
-              {t("Note")}
+              {t("Note")}{" "}
               <span className="text-muted-foreground">{t("(optional)")}</span>
             </Label>
             <Textarea

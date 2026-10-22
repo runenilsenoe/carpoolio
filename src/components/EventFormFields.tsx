@@ -41,7 +41,7 @@ export function EventFormFields({ value, onChange }: Props) {
         </div>
         <div className="min-w-0 space-y-2">
           <Label htmlFor="event-time">
-            {t("Time")}
+            {t("Time")}{" "}
             <span className="text-muted-foreground">{t("(optional)")}</span>
           </Label>
           <Input
@@ -55,7 +55,7 @@ export function EventFormFields({ value, onChange }: Props) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="event-destination">
-          {t("Destination")}
+          {t("Destination")}{" "}
           <span className="text-muted-foreground">{t("(optional)")}</span>
         </Label>
         <Input
